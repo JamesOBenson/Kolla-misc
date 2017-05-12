@@ -1,8 +1,7 @@
-
 Misc. scripts that help with kolla deployments.
 
-
 ##kolla_bridge.yml
+
 execute: ansible-playbook -i multinode kolla_bridge.yml
 
 This will go into your hosts file of kolla:
