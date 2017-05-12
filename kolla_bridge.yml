@@ -1,0 +1,85 @@
+---
+- hosts: all
+  user: ubuntu
+#  become: yes
+  gather_facts: True
+  tasks:
+  - set_fact:
+      interface_path: "/home/ubuntu/interfaces"
+  - set_fact:
+      eno2IP: "{{ ansible_eno2.ipv4.address }}"
+  - set_fact:
+      eno2Netmask: "{{ ansible_eno2.ipv4.netmask }}"
+  - set_fact:
+      eno2Network: "{{ ansible_eno2.ipv4.network }}"
+  - set_fact:
+      eno2Gateway: "{{ eno2IP[:10]}}253"
+#  - debug:
+#      msg: "IP is: {{eno2IP}}"
+#  - debug:
+#      msg: "NETMASK is: {{eno2Netmask}}"
+#  - debug:
+#      msg: "Network is {{eno2Network}}"
+#  - debug:
+#      msg: "Gateway is {{eno2Gateway}}"
+  - name: remove pre-down lines
+    replace:
+      path: "{{ interface_path }}"
+      regexp: '(\s.)pre-down(.*)'
+  - name: remove post-up lines
+    replace:
+      path: "{{ interface_path }}"
+      regexp: '(\s.)post-up(.*)'
+  - name: remove eno2 lines
+    replace:
+      path: "{{ interface_path }}"
+      regexp: 'auto eno2'
+  - replace:
+      path: "{{ interface_path }}"
+      regexp: 'iface eno2 inet manual'
+  - name: remove --mtu 1500-- lines
+    replace:
+      path: "{{ interface_path }}"
+      regexp: '(\s.)mtu 1500'
+  - name: remove network source lines
+    replace:
+      path: "{{ interface_path }}"
+      regexp: 'source(.*)'
+  - name: cleanup interfaces file -new lines
+    replace:
+      path: "{{ interface_path }}"
+      regexp: '(\s{4,}\W{0}\n)'
+  - name: add bridge FOR NON-CONTROL nodes
+    when: inventory_hostname not in groups.control
+    blockinfile:
+      path: "{{ interface_path }}"
+      state: present
+      block: |
+       auto eno2
+       auto br0
+       iface br0 inet static
+           pre-up ip link add veno0 type veth peer name veno1
+           pre-up ifconfig veno0 up
+           pre-up ifconfig veno1 up
+           bridge_ports eno2 veno0
+           bridge_fd 0
+           bridge_maxwait 0
+  - name: add bridge FOR CONTROL nodes
+    when: inventory_hostname in groups.control
+    blockinfile:
+      path: "{{ interface_path }}"
+      state: present
+      block: |
+       auto eno2
+       auto br0
+       iface br0 inet static
+           pre-up ip link add veno0 type veth peer name veno1
+           pre-up ifconfig veno0 up
+           pre-up ifconfig veno1 up
+           bridge_ports eno2 veno0
+           bridge_fd 0
+           bridge_maxwait 0
+           address {{ eno2IP }}
+           netmask {{ eno2Netmask }}
+           gateway {{ eno2Gateway }}
+           up route add -net {{ eno2Network }} netmask {{ eno2Netmask }} gw {{ eno2Gateway }} br0
