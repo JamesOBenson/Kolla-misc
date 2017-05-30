@@ -12,7 +12,7 @@
   - debug:
       msg: "IP ADDR: {{ ansible_eno1.ipv4.address }} HOSTNAME: {{ inventory_hostname }}"
 
-  - name: Fix sudo
+  - name: Make sure internal IPv4 and hostname is in etc/hosts
     lineinfile:
       line: "{{ ansible_eno1.ipv4.address }} {{ inventory_hostname }}"
       path: /etc/hosts
@@ -75,13 +75,18 @@
            up route add -net 10.245.122.0 netmask 255.255.255.0 gw 10.245.122.253 br0
 
 
-  - name: Get contents of interface file...
-    command: cat "{{ interface_path }}"
-    register: newinterface
+#  - name: Get contents of interface file...
+#    command: cat "{{ interface_path }}"
+#    register: newinterface
 
 #  - name: Print contents of Interface file
 #    debug:
 #      msg: "{{ newinterface.split('\n') }}"
+
+  - name: Setup sdb drive for storage
+    shell: parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1
+    become_method: sudo
+    ignore_errors: true
 
   - name: Restart server
     shell: sleep 2 && shutdown -r now
