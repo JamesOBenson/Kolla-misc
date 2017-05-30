@@ -84,7 +84,7 @@
 #      msg: "{{ newinterface.split('\n') }}"
 
   - name: Setup sdb drive for storage
-    shell: parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1
+    shell: sudo parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1
     become_method: sudo
     ignore_errors: true
 
