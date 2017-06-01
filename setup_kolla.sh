@@ -6,11 +6,11 @@
 
 function one_time () {
   apt update
-  apt install python-pip
+  apt install -y python-pip
   pip install -U pip
-  apt install python-dev libffi-dev gcc libssl-dev
+  apt install -y python-dev libffi-dev gcc libssl-dev
   pip install -U ansible
-  pip install kolla-ansible
+  pip install -U kolla-ansible
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
 }
 
@@ -22,7 +22,7 @@ function settings () {
 }
 
 function bootstrap () {
-  ansible-playbook -i tmp  ~/kolla_bridge.yml
+  ansible-playbook -i tmp  kolla_bridge.yml
   kolla-ansible -i multinode bootstrap-servers
   kolla-genpwd
 }
