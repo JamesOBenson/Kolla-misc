@@ -4,17 +4,45 @@
 #  - SSH access with root user is possible
 #  - /etc/hosts file has all hostnames in it
 
+function local_docker_repo () {
+  echo ""
+  echo ""
+  echo ""
+  echo "Creating a local docker repo..."
+  echo "   this is going to take a while..."
+  echo ""
+  echo ""
+  echo ""
+  docker run -d \
+      --name registry \
+      --restart=always \
+      -p 4000:5000 \
+      -v registry:/var/lib/registry \
+      registry:2
+  kolla-build -t source -b ubuntu --registry 127.0.0.1:4000 --push
+  
+}
+
+
 function one_time () {
+  echo ""
+  echo " Installing all pre-req's to get Kolla up and running"
+  echo ""
   apt update
-  apt install python-pip
+  apt install -y python-pip
   pip install -U pip
-  apt install python-dev libffi-dev gcc libssl-dev
+  apt install -y python-dev libffi-dev gcc libssl-dev
   pip install -U ansible
-  pip install kolla-ansible
+  pip install -U kolla-ansible
+  curl -sSL https://get.docker.io | bash
+  pip install -U kolla
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
 }
 
 function settings () {
+  echo ""
+  echo " Copying default settings and moving YOUR global file to /etc/kolla"
+  echo ""
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
 #cp /usr/local/share/kolla-ansible/ansible/inventory/* .
   cp globals.yml /etc/kolla/globals.yml
@@ -22,7 +50,7 @@ function settings () {
 }
 
 function bootstrap () {
-  ansible-playbook -i tmp  ~/kolla_bridge.yml
+  ansible-playbook -i tmp  kolla_bridge.yml
   kolla-ansible -i multinode bootstrap-servers
   kolla-genpwd
 }

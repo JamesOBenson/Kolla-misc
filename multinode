@@ -26,12 +26,12 @@ r2-710-5
 #compute01 neutron_external_interface=eth0 api_interface=em1 storage_interface=em1 tunnel_interface=em1
 
 [storage]
-r2-710-2
+#r2-710-2
 r2-710-3
 r2-710-4
 r2-710-5
 r2-710-6
-r2-710-7
+#r2-710-7
 r2-710-8
 
 
