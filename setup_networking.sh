@@ -72,9 +72,9 @@ function deploy_instance () {
     echo "******************************"
     echo "Floating IP is: [$FLOATING_IP]"
     echo "******************************"
-    echo "ssh -i ~/tmp cirros@$FLOATING_IP"
+    echo "ssh -i ~/tmp_keypair cirros@$FLOATING_IP"
     sleep 5
-    ssh -i ~/tmp cirros@"$FLOATING_IP"
+    ssh -i ~/tmp_keypair cirros@"$FLOATING_IP"
 }
 
 function usage () {

@@ -26,8 +26,8 @@ function local_docker_repo () {
 
 function one_time () {
   echo ""
-  echo " Installing all pre-req's to get Kolla up and running"
-  echo ""
+  echo " Installing all pre-req's to get Kolla deployment up and running"
+  echo "    Also sets up interfaces defined in tmp"
   apt update
   apt install -y python-pip
   pip install -U pip
@@ -50,23 +50,38 @@ function settings () {
 }
 
 function bootstrap () {
-  ansible-playbook -i tmp  kolla_bridge.yml
+  echo ""
+  echo " Sets up ceph, kolla bootstrap, and genpwd"
+  echo ""
+  ansible-playbook -i tmp  kolla_bridge.yml --tags "oneTime,interface"
+  ansible-playbook -i tmp  kolla_bridge.yml --tags "ceph"
+#  ansible-playbook -i tmp  kolla_bridge.yml --tags reboot
   kolla-ansible -i multinode bootstrap-servers
   kolla-genpwd
 }
 
 function prechecks () {
+  echo ""
+  echo " Kolla prechecks and pull images local"
+  echo ""
   kolla-ansible prechecks -i multinode
+  sleep 10
   kolla-ansible pull -i multinode
+  sleep 5
 }
 
 function deploy () {
-  kolla-ansible deploy -i multinode
+  echo ""
+  echo " Kolla deploy"
+  echo ""
+  kolla-ansible deploy -i multinode -vv
+  sleep 5
 }
 
 function post_deploy () {
   kolla-ansible post-deploy
   cat /etc/kolla/admin-openrc.sh | grep OS_PASSWORD
+  ./setup_networking.sh deploy
 }
 
 function usage () {

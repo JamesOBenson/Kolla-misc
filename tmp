@@ -1,10 +1,10 @@
 r2-410-1 ansible_python_interpreter=/usr/bin/python3
-#r2-410-2 ansible_python_interpreter=/usr/bin/python3
-#r2-410-3 ansible_python_interpreter=/usr/bin/python3
-#r2-410-4 ansible_python_interpreter=/usr/bin/python3
-#r2-410-5 ansible_python_interpreter=/usr/bin/python3
-#r2-410-6 ansible_python_interpreter=/usr/bin/python3
-#r2-410-7 ansible_python_interpreter=/usr/bin/python3
+r2-410-2 ansible_python_interpreter=/usr/bin/python3
+r2-410-3 ansible_python_interpreter=/usr/bin/python3
+r2-410-4 ansible_python_interpreter=/usr/bin/python3
+r2-410-5 ansible_python_interpreter=/usr/bin/python3
+r2-410-6 ansible_python_interpreter=/usr/bin/python3
+r2-410-7 ansible_python_interpreter=/usr/bin/python3
 #r2-410-8 ansible_python_interpreter=/usr/bin/python3
 #r2-410-9 ansible_python_interpreter=/usr/bin/python3
 #r2-610-1 ansible_python_interpreter=/usr/bin/python3

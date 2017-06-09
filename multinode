@@ -11,27 +11,30 @@ r2-710-8
 
 # The network nodes are where your l3-agent and loadbalancers will run
 # This can be the same as a host in the control group
-[network]
-r2-710-2
-r2-710-3
-r2-710-4
+[network:children]
+#r2-710-2
+#r2-710-3
+#r2-710-4
+#r2-710-6
+control
 
 [compute]
 r2-410-1
 
 [monitoring]
 r2-710-5
+#r2-710-6
 # When compute nodes and control nodes use different interfaces,
 # you can specify "api_interface" and other interfaces like below:
 #compute01 neutron_external_interface=eth0 api_interface=em1 storage_interface=em1 tunnel_interface=em1
 
 [storage]
-#r2-710-2
+r2-710-2
 r2-710-3
 r2-710-4
 r2-710-5
 r2-710-6
-#r2-710-7
+r2-710-7
 r2-710-8
 
 
