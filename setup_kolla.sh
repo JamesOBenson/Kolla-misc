@@ -1,4 +1,5 @@
 #!/bin/bash
+SLEEP=5
 
 # Verify:
 #  - SSH access with root user is possible
@@ -6,9 +7,10 @@
 
 function create_docker_repo_and_images () {
   echo ""
+  echo "<create_docker_repo_and_images>"
   echo ""
-  echo ""
-  echo "Creating a local docker repo..."
+  echo "Creating a local docker repo (registry2)...."
+  echo "Building ubuntu source kolla images..."
   echo "   this is going to take a while..."
   echo ""
   echo ""
@@ -24,13 +26,13 @@ function create_docker_repo_and_images () {
 
 function delete_docker_repo_and_images () {
   echo ""
-  echo ""
+  echo "<delete_docker_repo_and_images>"
   echo ""
   echo "DELETING the local docker repo and images..."
   echo ""
   echo ""
   echo ""
-  sleep 5
+  sleep $SLEEP
   docker rmi -f `docker images | grep kolla | awk '{print $3}'`
   docker rmi `docker images | grep ubuntu | awk '{print $3}'`
   docker stop `docker ps -a | grep registry | awk '{print $1}'`
@@ -40,6 +42,8 @@ function delete_docker_repo_and_images () {
 
 function one_time () {
   echo ""
+  echo "<One_time>"
+  echo ""
   echo " Installing all pre-req's to get Kolla deployment up and running"
   echo "    Also sets up interfaces defined in tmp"
   apt update
@@ -47,13 +51,15 @@ function one_time () {
   pip install -U pip
   apt install -y python-dev libffi-dev gcc libssl-dev
   pip install -U ansible
-  pip install -U kolla-ansible
+  pip install -U git+https://github.com/openstack/kolla-ansible.git@stable/ocata
   curl -sSL https://get.docker.io | bash
-  pip install -U kolla
+  pip install -U git+https://github.com/openstack/kolla.git@stable/ocata
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
 }
 
 function settings () {
+  echo ""
+  echo "<settings>"
   echo ""
   echo " Copying default settings and moving YOUR global file to /etc/kolla"
   echo ""
@@ -63,6 +69,8 @@ function settings () {
 }
 
 function bootstrap () {
+  echo ""
+  echo "<bootstrap>"
   echo ""
   echo " Sets up ceph, kolla bootstrap, and genpwd"
   echo ""
@@ -74,37 +82,44 @@ function bootstrap () {
 }
 
 function destroy () {
+  echo ""
+  echo "<destroy>"
+  echo ""
+  echo "- Killing VM's"
+  echo "- kolla-ansible destroy"
+  echo "- Destroy ceph volumes"
+  echo "- optional: delete images on nodes"
+  echo ""
   ansible-playbook -i tmp kolla_bridge.yml --tags "kill_VMs"
   kolla-ansible -i multinode destroy --yes-i-really-really-mean-it
   ansible-playbook -i tmp  kolla_bridge.yml --tags "ceph"
-  while true; do
-    read -p "Do you with to delete ALL containers on hosts too?" yn
+  echo "Do you with to delete ALL containers on hosts too?"
+  select yn in "Yes" "No"; do
     case $yn in
-      [Yy]* ) ansible-playbook -i tmp kolla_bridge.yml --tags "delete_images"; break;;
-      [Nn]* ) exit;;
-      * ) echo "Please answer yes or no.";;
+        Yes ) ansible-playbook -i tmp kolla_bridge.yml --tags "delete_images"; break;;
+        No ) exit;;
     esac
   done
 }
 
-
-
 function prechecks () {
+  echo ""
+  echo "<prechecks>"
   echo ""
   echo " Kolla prechecks and pull images local"
   echo ""
   kolla-ansible prechecks -i multinode
-  sleep 10
+  sleep $SLEEP
   kolla-ansible pull -i multinode
-  sleep 5
+  sleep $SLEEP
 }
 
 function deploy () {
   echo ""
-  echo " Kolla deploy"
+  echo "<deploy>"
   echo ""
   kolla-ansible deploy -i multinode -vv
-  sleep 5
+  sleep $SLEEP
 }
 
 function post_deploy () {
@@ -119,13 +134,16 @@ function usage () {
     echo ""
     echo "Usage: $0 {Any of the options below}"
     echo ""
-    echo "  "
+    echo ""
+    echo "  create_docker_repo_and_images"
+    echo "    creates the docker repo and builds images"
+    echo ""
     echo "  one_time"
     echo "    Installs necessary components"
-    echo "    "
+    echo ""
     echo "  settings"
     echo "    Moves local global.yml to /etc/kolla/global.yml"
-    echo "    "
+    echo ""
     echo "  bootstrap"
     echo "    Fixes interfaces file for bridges"
     echo "    bootstraps the servers"
@@ -139,16 +157,13 @@ function usage () {
     echo ""
     echo "  post_deploy"
     echo "    runs the post-deploy and cat's out admin password"
-    echo "  "
+    echo ""
     echo "  destroy"
     echo "    destroys the evironment and wipes ceph"
-    echo "  "
+    echo ""
     echo "  delete_docker_repo_and_images"
     echo "    deletes all docker images"
-    echo "  "
-    echo "  create_docker_repo_and_images"
-    echo "    creates the docker repo and builds images"
-    echo "  "
+    echo ""
     echo "  deploy_all"
     echo "    precheck"
     echo "    deploy"
