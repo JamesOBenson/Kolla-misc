@@ -18,7 +18,7 @@ kolla_base_distro: "ubuntu"
 kolla_install_type: "source"
 
 # Valid option is Docker repository tag
-openstack_release: "4.0.0"
+openstack_release: "4.0.1"
 
 # Location of configuration overrides
 #node_custom_config: "/etc/kolla/config"
@@ -52,6 +52,7 @@ kolla_external_fqdn: "{{ kolla_external_vip_address }}"
 # Docker registry password can also be set in the passwords.yml file.
 
 #docker_registry: "172.16.0.10:4000"
+docker_registry: "192.168.2.32:4000"
 #docker_namespace: "companyname"
 #docker_registry_username: "sam"
 #docker_registry_password: "correcthorsebatterystaple"
@@ -74,11 +75,11 @@ network_interface: "eno1"
 # These can be adjusted for even more customization. The default is the same as
 # the 'network_interface'. These interfaces must contain an IPv4 address.
 kolla_external_vip_interface: "br0"
-api_interface: "{{ network_interface }}"
-storage_interface: "{{ network_interface }}"
-cluster_interface: "{{ network_interface }}"
-tunnel_interface: "{{ network_interface }}"
-dns_interface: "{{ network_interface }}"
+#api_interface: "{{ network_interface }}"
+#storage_interface: "{{ network_interface }}"
+#cluster_interface: "{{ network_interface }}"
+#tunnel_interface: "{{ network_interface }}"
+#dns_interface: "{{ network_interface }}"
 
 # This is the raw interface given to neutron as its external network port. Even
 # though an IP address can exist on this interface, it will be unusable in most
@@ -87,14 +88,14 @@ dns_interface: "{{ network_interface }}"
 neutron_external_interface: "veno1"
 
 # Valid options are [ openvswitch, linuxbridge ]
-neutron_plugin_agent: "openvswitch"
+#neutron_plugin_agent: "openvswitch"
 
 
 ####################
 # keepalived options
 ####################
 # Arbitrary unique number from 0..255
-keepalived_virtual_router_id: "51"
+#keepalived_virtual_router_id: "51"
 
 
 ####################
@@ -103,8 +104,8 @@ keepalived_virtual_router_id: "51"
 # To provide encryption and authentication on the kolla_external_vip_interface,
 # TLS can be enabled.  When TLS is enabled, certificates must be provided to
 # allow clients to perform authentication.
-kolla_enable_tls_external: "yes"
-kolla_external_fqdn_cert: "{{ node_config_directory }}/certificates/haproxy.pem"
+kolla_enable_tls_external: "no"
+#kolla_external_fqdn_cert: "{{ node_config_directory }}/certificates/haproxy.pem"
 
 
 ####################
@@ -118,12 +119,12 @@ kolla_external_fqdn_cert: "{{ node_config_directory }}/certificates/haproxy.pem"
 #nova_console: "novnc"
 
 # OpenStack services can be enabled or disabled with these options
-enable_aodh: "yes"
+enable_aodh: "no"
 #enable_barbican: "no"
 #enable_ceilometer: "no"
-enable_central_logging: "yes"
+enable_central_logging: "no"
 enable_ceph: "yes"
-enable_ceph_rgw: "yes"
+enable_ceph_rgw: "no"
 #enable_chrony: "no"
 enable_cinder: "yes"
 #enable_cinder_backend_hnas_iscsi: "no"
@@ -138,10 +139,10 @@ enable_cinder: "yes"
 #enable_destroy_images: "no"
 #enable_etcd: "no"
 #enable_freezer: "no"
-enable_gnocchi: "yes"
-enable_grafana: "yes"
-enable_heat: "yes"
-enable_horizon: "yes"
+enable_gnocchi: "no"
+enable_grafana: "no"
+#enable_heat: "yes"
+#enable_horizon: "yes"
 #enable_horizon_cloudkitty: "{{ enable_cloudkitty | bool }}"
 #enable_horizon_freezer: "{{ enable_freezer | bool }}"
 #enable_horizon_ironic: "{{ enable_ironic | bool }}"
@@ -158,21 +159,21 @@ enable_horizon: "yes"
 #enable_horizon_tacker: "{{ enable_tacker | bool }}"
 #enable_horizon_trove: "{{ enable_trove | bool }}"
 #enable_horizon_watcher: "{{ enable_watcher | bool }}"
-enable_influxdb: "yes"
+enable_influxdb: "no"
 #enable_ironic: "no"
 #enable_karbor: "no"
 #enable_kuryr: "no"
-enable_magnum: "yes"
+enable_magnum: "no"
 #enable_manila: "no"
 #enable_manila_backend_generic: "no"
 #enable_manila_backend_hnas: "no"
 #enable_mistral: "no"
 #enable_mongodb: "no"
-enable_murano: "yes"
+enable_murano: "no"
 #enable_multipathd: "no"
 #enable_neutron_dvr: "no"
-enable_neutron_lbaas: "yes"
-enable_neutron_fwaas: "yes"
+enable_neutron_lbaas: "no"
+enable_neutron_fwaas: "no"
 #enable_neutron_qos: "no"
 #enable_neutron_agent_ha: "no"
 #enable_neutron_vpnaas: "no"
@@ -180,18 +181,18 @@ enable_neutron_fwaas: "yes"
 #enable_octavia: "no"
 #enable_panko: "no"
 #enable_rally: "no"
-enable_sahara: "yes"
-enable_searchlight: "yes"
+enable_sahara: "no"
+enable_searchlight: "no"
 #enable_senlin: "no"
 #enable_solum: "no"
 #enable_swift: "no"
 #enable_telegraf: "no"
 #enable_tacker: "no"
 #enable_tempest: "no"
-enable_trove: "yes"
+enable_trove: "no"
 #enable_vmtp: "no"
 #enable_watcher: "no"
-#ceph_osd_wipe_disk: 'yes-i-really-really-mean-it'
+ceph_osd_wipe_disk: 'yes-i-really-really-mean-it'
 
 ###################
 # Ceph options
@@ -207,7 +208,7 @@ enable_trove: "yes"
 #ceph_pool_type: "replicated"
 
 # Integrate ceph rados object gateway with openstack keystone
-enable_ceph_rgw_keystone: "yes"
+enable_ceph_rgw_keystone: "no"
 
 
 ##############################
@@ -215,8 +216,8 @@ enable_ceph_rgw_keystone: "yes"
 ##############################
 
 # Valid options are [ uuid, fernet ]
-#keystone_token_provider: 'uuid'
-keystone_token_provider: 'fernet'
+keystone_token_provider: 'uuid'
+#keystone_token_provider: 'fernet'
 
 # Interval to rotate fernet keys by (in seconds). Must be an interval of
 # 60(1 min), 120(2 min), 180(3 min), 240(4 min), 300(5 min), 360(6 min),
@@ -224,7 +225,7 @@ keystone_token_provider: 'fernet'
 # 3600(1 hour), 7200(2 hour), 10800(3 hour), 14400(4 hour), 21600(6 hour),
 # 28800(8 hour), 43200(12 hour), 86400(1 day), 604800(1 week).
 #fernet_token_expiry: 86400
-fernet_token_expiry: 604800
+#fernet_token_expiry: 604800
 
 
 #########################
@@ -261,15 +262,15 @@ glance_backend_ceph: "yes"
 # Gnocchi options
 #######################
 # Valid options are [ file, ceph ]
-#gnocchi_backend_storage: "{{ 'ceph' if enable_ceph|bool else 'file' }}"
-gnocchi_backend_storage: "ceph"
+gnocchi_backend_storage: "{{ 'ceph' if enable_ceph|bool else 'file' }}"
+#gnocchi_backend_storage: "ceph"
 
 
 #################################
 # Cinder - Block Storage Options
 #################################
 # Enable / disable Cinder backends
-cinder_backend_ceph: "{{ enable_ceph }}"
+#cinder_backend_ceph: "{{ enable_ceph }}"
 #cinder_volume_group: "cinder-volumes"
 #cinder_backup_driver: "nfs"
 #cinder_backup_share: ""
@@ -286,7 +287,7 @@ designate_ns_record: "sample.openstack.org"
 #########################
 # Nova - Compute Options
 #########################
-nova_backend_ceph: "{{ enable_ceph }}"
+#nova_backend_ceph: "{{ enable_ceph }}"
 
 
 ##############################

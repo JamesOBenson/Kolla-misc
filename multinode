@@ -11,15 +11,15 @@ r2-710-8
 
 # The network nodes are where your l3-agent and loadbalancers will run
 # This can be the same as a host in the control group
-[network:children]
-#r2-710-2
-#r2-710-3
-#r2-710-4
-#r2-710-6
-control
+[network]
+r2-710-2
+r2-710-3
+r2-710-4
 
 [compute]
 r2-410-1
+r2-410-2
+r2-410-3
 
 [monitoring]
 r2-710-5

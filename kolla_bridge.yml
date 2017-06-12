@@ -102,7 +102,7 @@
            address {{ ansible_eno1.ipv4.address }}
            netmask 255.255.255.0
 
-        auto eno2
+        #auto eno2
         auto br0
         iface br0 inet static
            pre-up ip link add veno0 type veth peer name veno1
@@ -219,3 +219,17 @@
         delay=1
         timeout=600
         connect_timeout=15
+
+  - name: Stop all running containers
+    shell: docker stop 
+  
+  - name: Delete local docker images
+    shell: docker rmi -f $(docker images --quiet)
+    become: yes
+    tags: delete_images
+    ignore_errors: true
+
+  - name: Kill all running VM's
+    shell: sleep 1
+    become: yes
+    tags: kill_VMs
