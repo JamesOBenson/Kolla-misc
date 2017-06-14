@@ -230,6 +230,6 @@
     ignore_errors: true
 
   - name: Kill all running VM's
-    shell: sleep 1
+    shell: kill `ps aux | grep -F 'qemu' | awk '{ print $2 }'`
     become: yes
     tags: kill_VMs
