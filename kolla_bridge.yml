@@ -11,20 +11,18 @@
       veno0: sbin/ifconfig | grep veno0 | wc -l
       CIDR: "10.245.122."
     tags: interface
-  - debug:
-      msg: "IP ADDR: {{ ansible_eno1.ipv4.address }} HOSTNAME: {{ inventory_hostname }}"
-    tags: interface
-  - debug:
-      msg: "veno0 is {{ veno0 }}"
-    tags: interface
-  - name: Fix timezone issue
-    command: sudo timedatectl set-timezone America/Chicago
-    become: yes
-    tags: time
+#  - debug:
+#      msg: "IP ADDR: {{ ansible_eno1.ipv4.address }} HOSTNAME: {{ inventory_hostname }}"
+#    tags: interface
+#  - debug:
+#      msg: "veno0 is {{ veno0 }}"
+#    tags: interface
 
+#  - name: Fix timezone issue
+#    command: sudo timedatectl set-timezone America/Chicago
+#    become: yes
+#    tags: time
 
-#command: sudo ln -fs /usr/share/zoneinfo/America/New_York /etc/localtime
-#$ sudo dpkg-reconfigure --frontend noninteractive tzdata
   - name: Uninstall LXD and LXC
     apt:
      name: "{item }"
@@ -32,7 +30,7 @@
     with_items:
       - lxd
       - lxc
-    tags: oneTime1
+    tags: oneTime
 
   - name: Make sure internal IPv4 and hostname is in etc/hosts
     lineinfile:
@@ -43,7 +41,6 @@
       group: root
       mode: 0644
     become: yes
-#    become_method: sudo
     async: 60
     poll: 5
     tags: oneTime
@@ -77,14 +74,12 @@
       owner: root
       group: root
     tags: interface
-    #when: veno0 is undefined
     when: iface_veno0.stdout == '0'
      
   - name: new interfaces file
     become: yes
     tags: interface
     ignore_errors: true
-    #when: veno0 is undefined
     when: iface_veno0.stdout == '0'
     blockinfile:
       mode: 0644
@@ -116,40 +111,15 @@
            gateway 10.245.122.253
            up route add -net 10.245.122.0 netmask 255.255.255.0 gw 10.245.122.253 br0
 
-#  - name: Get contents of interface file...
-#    command: cat "{{ interface_path }}"
-#    register: newinterface
-
-#  - name: Print contents of Interface file
-#    debug:
-#      msg: "{{ newinterface.split('\n') }}"
-
-#  - name: Bring down and up the network
-#    service:
-#      name: network
-#      state: restarted
-#    async: 60
-#    poll: 5
-#    tags: interface
-
-#  - name: Bring down and up the network
-#    become: yes
-#    shell: "ifdown -a && ifup -a"
-#    async: 60
-#    poll: 1
-#    ignore_errors: true
-#    tags: interface
-
-#  - name: Wait for networking to restart
-#    tags: interface
-#    local_action:
-#      module: wait_for
-#        host={{ inventory_hostname }}
-#        state=started
-#        port=22
-#        delay=1
-#        timeout=60
-#        connect_timeout=15
+  - name: Restart server
+    shell: sleep 2 && shutdown -r now
+    async: 1
+    poll: 0
+    tags: interface
+    when: iface_veno0.stdout == '0'
+    become: yes
+    become_method: sudo
+    ignore_errors: true  
 
   - name: umount CEPH partitions
     shell: sudo umount $(mount -v | grep sdb1 | awk '{print $3}')
@@ -165,19 +135,8 @@
     become: yes
     tags: ceph 
 
-  - shell: sudo sgdisk --new=2:1M:5G /dev/sdb
-    become_method: sudo
-    become: yes
-    tags: ceph2
-  - shell: sudo sgdisk --largest-new=1 /dev/sdb
-    become_method: sudo
-    become: yes
-    tags: ceph2
-
   - name: Setup sdb drive for storage
     shell: sudo sgdisk --largest-new=1 -c 1:"KOLLA_CEPH_OSD_BOOTSTRAP" /dev/sdb
-    #shell: sudo sgdisk -n 1:1049:-1 -c 1:"KOLLA_CEPH_OSD_BOOTSTRAP" /dev/sdb
-    #shell: sudo parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1
     tags: ceph
     become: yes
     become_method: sudo
@@ -190,25 +149,17 @@
     async: 45
     poll: 1
 
-
-#  - shell: sudo sgdisk -c 2:"KOLLA_CEPH_DATA_{{ item }}_J" -c 1:"KOLLA_CEPH_DATA" -t 2:f800 -t 1:f802 /dev/sdb
-#    become_method: sudo
-#    become: yes
-#    with_sequence: count=3
-#    tags: ceph
-
   - name: Restart server
     shell: sleep 2 && shutdown -r now
     async: 1
     poll: 0
-    tags: reboot,ceph,interface
+    tags: reboot,ceph
     become: yes
     become_method: sudo
     ignore_errors: true
 
 # wait 300 seconds for port 22 to become open and contain "OpenSSH", don't assume the inventory_hostname is resolvable
 # and don't start checking for 10 seconds
-#  - local_action: wait_for port=22 host="{{ ansible_ssh_host | default(inventory_hostname) }}" search_regex=OpenSSH delay=10
   - name: Wait for server to restart
     tags: reboot,interface,ceph
     local_action:
@@ -219,9 +170,6 @@
         delay=1
         timeout=600
         connect_timeout=15
-
-  - name: Stop all running containers
-    shell: docker stop 
   
   - name: Delete local docker images
     shell: docker rmi -f $(docker images --quiet)
