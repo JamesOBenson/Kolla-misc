@@ -1,0 +1,26 @@
+---
+- name: Uninstall LXD and LXC
+  become: yes
+  apt:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - lxd
+    - lxc
+
+- name: Make sure internal IPv4 and hostname is in etc/hosts
+  lineinfile:
+      line: "{{ ansible_eno1.ipv4.address }} {{ inventory_hostname }}"
+      path: /etc/hosts
+      state: present
+      owner: root
+      group: root
+      mode: 0644
+  become: yes
+  async: 60
+  poll: 5
+
+
+- name: Allow root to SSH
+  command: cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys
+  become: yes

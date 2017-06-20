@@ -1,0 +1,41 @@
+---
+- name: umount CEPH partitions
+  shell: sudo umount $(mount -v | grep sdb1 | awk '{print $3}')
+  ignore_errors: true
+  become: yes
+  become_method: sudo
+
+- name: Delete partions
+  shell: sudo sgdisk --zap-all /dev/sdb
+  ignore_errors: true
+  become: yes
+  become_method: sudo
+
+- name: Setup sdb drive for storage
+  shell: sudo sgdisk --largest-new=1 -c 1:"KOLLA_CEPH_OSD_BOOTSTRAP" /dev/sdb
+  become: yes
+  become_method: sudo
+  ignore_errors: true
+
+- shell: partprobe || true
+  become_method: sudo
+  become: yes
+  async: 45
+  poll: 1
+
+- name: Restart server
+  shell: sleep 2 && shutdown -r now
+  async: 1
+  poll: 0
+  become: yes
+  ignore_errors: true
+
+- name: Wait for server to restart
+  local_action:
+    module: wait_for
+      host={{ inventory_hostname }}
+      state=started
+      port=22
+      delay=1
+      timeout=600
+      connect_timeout=15

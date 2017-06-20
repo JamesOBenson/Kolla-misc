@@ -1,0 +1,45 @@
+---
+- name: oneTime
+  hosts: all
+  become: yes
+  tasks:
+    - include: tasks/Install.yml
+  tags: oneTime
+
+- name: Generate Interfaces (Create Public interface)
+  hosts: all
+  vars:
+    network_Oct: "0"
+    gateway_Oct: "253"
+  vars_prompt:
+    - name: "CIDR"
+      prompt: "What is the first 3 octets of the IP? i.e. 10.245.122."
+      default: "10.245.122."
+      private: no
+  tasks:
+    - include: tasks/Generate_interfaces.yml
+  tags: generate_public_interfaces
+
+- name: Remove public interfaces
+  hosts: 'all:!control:!monitoring'
+  tasks:
+    - include: tasks/Destroy_interfaces.yml
+  tags: destroy_public_interfaces
+
+- name: Refresh the ceph partitions
+  hosts: all
+  tasks:
+    - include: tasks/ceph.yml
+  tags: ceph
+
+- name: Delete all docker images from cluster
+  hosts: compute
+  tasks: 
+    - include: tasks/delete_docker_images_and_VMs.yml
+  tags: nuke_it
+
+- name: Reboot all nodes
+  hosts: all
+  tasks:
+    - include: tasks/Reboot.yml
+  tags: Reboot

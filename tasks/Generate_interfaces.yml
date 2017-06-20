@@ -1,0 +1,74 @@
+---
+- name: Check interface veno0 exists
+  shell: /sbin/ifconfig | grep veno0 | wc -l
+  register: iface_veno0
+
+- debug:
+    msg: "veno0 is {{ iface_veno0.stdout }}"
+
+- name: Backup interfaces file
+  become: yes
+  when: iface_veno0.stdout == '0'
+  command: mv /etc/network/interfaces /etc/network/interfaces.bck
+
+- name: Create a new interfaces file
+  become: yes
+  when: iface_veno0.stdout == '0'
+  file:
+    path: /etc/network/interfaces
+    state: touch
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Inject code into new interfaces file (Generating IP for Br0)
+  become: yes
+  when: iface_veno0.stdout == '0'
+  ignore_errors: true
+  blockinfile:
+    mode: 0644
+    path: /etc/network/interfaces
+    state: present
+    block: |
+        auto lo
+        iface lo inet loopback
+          dns-search maas
+          dns-nameservers 10.245.0.10
+
+        auto eno1
+        iface eno1 inet static
+           dns-nameservers 10.245.0.10
+           address {{ ansible_eno1.ipv4.address }}
+           netmask 255.255.255.0
+
+        #auto eno2
+        auto br0
+        iface br0 inet static
+           pre-up ip link add veno0 type veth peer name veno1
+           pre-up ifconfig veno0 up
+           pre-up ifconfig veno1 up
+           bridge_ports eno2 veno0
+           bridge_fd 0
+           bridge_maxwait 0
+           address {{ CIDR }}{{ ansible_eno1.ipv4.address.split('.')[3] }}
+           netmask 255.255.255.0
+           gateway {{ CIDR }}{{ gateway_Oct }}
+           up route add -net {{ CIDR }}{{ network_Oct }}  netmask 255.255.255.0 gw {{ CIDR }}{{ gateway_Oct }}  br0
+
+- name: Restart server
+  become: yes
+  shell: sleep 2 && shutdown -r now
+  async: 1
+  poll: 0
+  when: iface_veno0.stdout == '0'
+  ignore_errors: true
+
+- name: Wait for server to restart
+  local_action:
+    module: wait_for
+      host={{ inventory_hostname }}
+      state=started
+      port=22
+      delay=1
+      timeout=600
+      connect_timeout=15
