@@ -51,3 +51,9 @@ Usage: ./setup_kolla.sh {Any of the options below}
     deploy
     post_deploy
 ```
+
+
+### Please be sure to update setup_kolla.sh with correct TMP_INVENTORY_FILE="tmp6"
+### INVENTORY_FILE="multinode6"
+
+### Also be sure to update globals with correct settings as well.
