@@ -3,14 +3,31 @@
   user: ubuntu
   #become: yes
   gather_facts: True
+  vars:
+    network_Oct: "0"
+    gateway_Oct: "253" 
+    ansible_python_interpreter: "/usr/bin/python3"
+  vars_prompt:
+    - name: "CIDR"
+      prompt: "What is the first 3 octets of the IP? i.e. 10.245.122."
+      default: "10.245.122."
+      private: no
+      tags: interface
+
   tasks:
   - set_fact:
       interface_path: "/etc/network/interfaces"
       eno1_addr: ansible_eno1.ipv4.address
       br0_addr: ansible_br0.ipv4.address
       veno0: sbin/ifconfig | grep veno0 | wc -l
-      CIDR: "10.245.122."
+#      CIDR: "10.245.122."
     tags: interface
+
+#  vars_prompt:
+#    - name: "CIDR"
+#      prompt: "What is the first 3 octets of the IP? i.e. 10.245.122."
+#      default: "10.245.122."
+      #tags: interface
 #  - debug:
 #      msg: "IP ADDR: {{ ansible_eno1.ipv4.address }} HOSTNAME: {{ inventory_hostname }}"
 #    tags: interface
@@ -23,7 +40,12 @@
 #    become: yes
 #    tags: time
 
+
+###############################
+#   oneTime
+###############################
   - name: Uninstall LXD and LXC
+    become: yes
     apt:
      name: "{item }"
      state: absent
@@ -50,10 +72,23 @@
     become: yes
     tags: oneTime
 
+###############################
+#   interface
+###############################
+
   - name: Check interface veno0 exists
     shell: /sbin/ifconfig | grep veno0 | wc -l
     tags: interface
     register: iface_veno0
+
+  - name: Check interface Br0 has IP address
+    shell: /sbin/ifconfig br0 | grep Bcast | wc -l
+    tags: interface
+    register: Br0_Bcast
+
+  - debug:
+      msg: "Br0_Bcast is {{ Br0_Bcast.stdout}}"
+    tags: interface
 
   - debug:
       msg: "veno0 is {{ iface_veno0.stdout }}"
@@ -75,12 +110,12 @@
       group: root
     tags: interface
     when: iface_veno0.stdout == '0'
-     
-  - name: new interfaces file
+
+  - name: new interfaces file for controller (public IP)
     become: yes
     tags: interface
     ignore_errors: true
-    when: iface_veno0.stdout == '0'
+    when: (iface_veno0.stdout == '0' and Br0_Bcast.stdout== '1')
     blockinfile:
       mode: 0644
       path: /etc/network/interfaces
@@ -108,8 +143,41 @@
            bridge_maxwait 0
            address {{ CIDR }}{{ ansible_eno1.ipv4.address.split('.')[3] }}
            netmask 255.255.255.0
-           gateway 10.245.122.253
-           up route add -net 10.245.122.0 netmask 255.255.255.0 gw 10.245.122.253 br0
+           gateway {{ CIDR }}{{ gateway_Oct }}
+           up route add -net {{ CIDR }}{{ network_Oct }}  netmask 255.255.255.0 gw {{ CIDR }}{{ gateway_Oct }}  br0
+
+  - name: new interfaces file for workers (no public IP)
+    become: yes
+    tags: interface
+    ignore_errors: true
+    when: (iface_veno0.stdout == '0' and Br0_Bcast.stdout == '0')
+    blockinfile:
+      mode: 0644
+      path: /etc/network/interfaces
+      state: present
+      block: |
+        auto lo
+        iface lo inet loopback
+          dns-search maas
+          dns-nameservers 10.245.0.10
+
+        auto eno1
+        iface eno1 inet static
+           dns-nameservers 10.245.0.10
+           address {{ ansible_eno1.ipv4.address }}
+           netmask 255.255.255.0
+           gateway 192.168.6.2
+
+        #auto eno2
+        auto br0
+        iface br0 inet manual
+           pre-up ip link add veno0 type veth peer name veno1
+           pre-up ifconfig veno0 up
+           pre-up ifconfig veno1 up
+           bridge_ports eno2 veno0
+           bridge_fd 0
+           bridge_maxwait 0
+
 
   - name: Restart server
     shell: sleep 2 && shutdown -r now
@@ -120,6 +188,10 @@
     become: yes
     become_method: sudo
     ignore_errors: true  
+
+###############################
+#   ceph
+###############################
 
   - name: umount CEPH partitions
     shell: sudo umount $(mount -v | grep sdb1 | awk '{print $3}')
@@ -170,7 +242,11 @@
         delay=1
         timeout=600
         connect_timeout=15
-  
+ 
+###############################
+#   MISC.
+###############################
+ 
   - name: Delete local docker images
     shell: docker rmi -f $(docker images --quiet)
     become: yes

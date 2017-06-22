@@ -27,7 +27,7 @@ openstack_release: "4.0.2"
 # the hosts running keepalived for high-availability. When running an All-In-One
 # without haproxy and keepalived, this should be the first IP on your
 # 'network_interface' as set in the Networking section below.
-kolla_internal_vip_address: "192.168.2.251"
+kolla_internal_vip_address: "192.168.6.251"
 
 # This is the DNS name that maps to the kolla_internal_vip_address VIP. By
 # default it is the same as kolla_internal_vip_address.
@@ -38,12 +38,13 @@ kolla_internal_fqdn: "{{ kolla_internal_vip_address }}"
 # kolla_internal_vip_address, allowing internal and external communication to
 # share the same address.  Specify a kolla_external_vip_address to separate
 # internal and external requests between two VIPs.
-kolla_external_vip_address: "10.245.122.4"
+kolla_external_vip_address: "10.245.126.4"
 
 # The Public address used to communicate with OpenStack as set in the public_url
 # for the endpoints that will be created. This DNS name should map to
 # kolla_external_vip_address.
-kolla_external_fqdn: "cloud.icsr.utsa.edu"
+
+#kolla_external_fqdn: "cloud.icsr.utsa.edu"
 
 ####################
 # Docker options
@@ -52,7 +53,9 @@ kolla_external_fqdn: "cloud.icsr.utsa.edu"
 # Docker registry password can also be set in the passwords.yml file.
 
 #docker_registry: "172.16.0.10:4000"
-docker_registry: "192.168.2.32:4000"
+#docker_registry: "192.168.2.250:4000"
+docker_registry: "192.168.6.250:4000"
+#docker_registry: "10.245.0.23:4000"
 #docker_namespace: "companyname"
 #docker_registry_username: "sam"
 #docker_registry_password: "correcthorsebatterystaple"
@@ -121,7 +124,7 @@ kolla_enable_tls_external: "yes"
 # OpenStack services can be enabled or disabled with these options
 enable_aodh: "yes"
 #enable_barbican: "no"
-#enable_ceilometer: "no"
+enable_ceilometer: "no"
 enable_central_logging: "yes"
 enable_ceph: "yes"
 enable_ceph_rgw: "yes"
@@ -192,7 +195,7 @@ enable_searchlight: "yes"
 enable_trove: "yes"
 #enable_vmtp: "no"
 #enable_watcher: "no"
-ceph_osd_wipe_disk: 'yes-i-really-really-mean-it'
+#ceph_osd_wipe_disk: 'yes-i-really-really-mean-it'
 
 ###################
 # Ceph options
@@ -224,8 +227,7 @@ keystone_token_provider: 'fernet'
 # 600(10 min), 720(12 min), 900(15 min), 1200(20 min), 1800(30 min),
 # 3600(1 hour), 7200(2 hour), 10800(3 hour), 14400(4 hour), 21600(6 hour),
 # 28800(8 hour), 43200(12 hour), 86400(1 day), 604800(1 week).
-#fernet_token_expiry: 86400
-fernet_token_expiry: 604800
+fernet_token_expiry: 86400
 
 
 #########################
