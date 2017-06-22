@@ -1,17 +1,59 @@
 Misc. scripts that help with kolla deployments.
 
-##kolla_bridge.yml
+execute:
+./setup_kolla.sh
+```
+Setup openstack
 
-execute: ansible-playbook -i multinode kolla_bridge.yml
 
-This will go into your hosts file of kolla:
-   
-   - for controllers:
-    - Assign previous IP address given for eno2 to the bridge
-    - create veth0
-    - create veth1
-   - for non-controllers:
-    - Create an anon. bridge (no IP)
-    - create veth0
-    - create veth0
-    - create veth1
+
+Missing paramter. Please Enter one of the following options
+
+Usage: ./setup_kolla.sh {Any of the options below}
+
+
+  create_docker_repo_and_images
+    creates the docker repo and builds images
+
+  one_time
+    Installs necessary components
+
+  settings
+    Moves local global.yml to /etc/kolla/global.yml
+
+  Reboot
+    Reboot all nodes
+
+  bootstrap
+    Fixes interfaces file for bridges
+    bootstraps the servers
+    generates passwords
+
+  prechecks
+    runs the prechecks
+    pulls images based off of globals file
+
+  deploy
+    Destroy public interfaces besides controllers
+    Deploy
+
+  post_deploy
+    runs the post-deploy and cat's out admin password
+
+  destroy
+    destroys the evironment and wipes ceph
+
+  delete_docker_repo_and_images
+    deletes all docker images
+
+  deploy_all
+    precheck
+    deploy
+    post_deploy
+```
+
+
+### Please be sure to update setup_kolla.sh with correct TMP_INVENTORY_FILE="tmp6"
+### INVENTORY_FILE="multinode6"
+
+### Also be sure to update globals with correct settings as well.
