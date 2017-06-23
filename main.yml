@@ -27,7 +27,7 @@
   tags: destroy_public_interfaces
 
 - name: Refresh the ceph partitions
-  hosts: all
+  hosts: storage
   tasks:
     - include: tasks/ceph.yml
   tags: ceph
