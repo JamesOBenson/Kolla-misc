@@ -10,7 +10,7 @@ RACK=6
 ###############
 # DO NOT MODIFY 
 ###############
-TMP_INVENTORY_FILE="tmp"$RACK
+#TMP_INVENTORY_FILE="tmp"$RACK
 INVENTORY_FILE="multinode"$RACK
 
 function create_docker_repo_and_images () {
