@@ -21,7 +21,7 @@
   tags: generate_public_interfaces
 
 - name: Remove public interfaces
-  hosts: 'all:!control:!monitoring'
+  hosts: 'all:!control:!monitoring:!network'
   tasks:
     - include: tasks/Destroy_interfaces.yml
   tags: destroy_public_interfaces

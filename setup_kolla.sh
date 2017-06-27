@@ -81,6 +81,8 @@ function one_time () {
   pip install -U pip
   apt install -y python-dev libffi-dev gcc libssl-dev
   pip install -U ansible==2.3.0.0
+  pip uninstall -U Jinja2 
+  pip install -U Jinja2==2.8
   #pip install -U git+https://github.com/openstack/kolla-ansible.git@stable/ocata
   pip install kolla-ansible==4.0.0
   curl -sSL https://get.docker.io | bash
