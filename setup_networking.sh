@@ -8,9 +8,11 @@ function create_admin_networking () {
     echo "Please enter the public network that will be used for floating IP's in the following format: 10.245.126"
     read -r public_network
     #public_network=10.245.126
-    neutron net-create public --tenant-id "${tenant}" --router:external --provider:network_type flat --provider:physical_network physnet1 --shared
+    openstack network create --project "${tenant}" --external --provider-network-type flat --provider-physical-network physnet1 --share public
+    #neutron net-create public --tenant-id "${tenant}" --router:external --provider:network_type flat --provider:physical_network physnet1 --shared
     #if segmented network{vlan,vxlan,gre}: --provider:segmentation_id ${segment_id}
-    neutron subnet-create public "${public_network}".0/24 --tenant-id "${tenant}" --allocation-pool start="${public_network}".15,end="${public_network}".250 --dns-nameserver 10.245.0.10 --disable-dhcp --gateway="${public_network}".253
+    openstack subnet create --project "${tenant}" --subnet-range "${public_network}".0/24 --allocation-pool start="${public_network}".15,end="${public_network}".249 --dns-nameserver 10.245.0.10 --no-dhcp --gateway "${public_network}".253 --network public public_subnet
+    #neutron subnet-create public "${public_network}".0/24 --tenant-id "${tenant}" --allocation-pool start="${public_network}".15,end="${public_network}".249 --dns-nameserver 10.245.0.10 --disable-dhcp --gateway="${public_network}".253
     # if you need a specific route to get "out" of your public network: --host-route destination=10.0.0.0/8,nexthop=10.1.10.254
 }
 
@@ -20,19 +22,24 @@ function create_networking () {
     echo "Creating private networking..."
     echo "  Note: This is what can be used in everyone tenant accounts...."
     echo ""
-    neutron net-create private --tenant-id "${tenant}"
-    neutron subnet-create private 192.168.100.0/24 --tenant-id "${tenant}" --dns-nameserver 10.245.0.10 --name private
+    openstack network create --project "${tenant}" private
+    openstack subnet create --project "${tenant}" --subnet-range 192.168.100.0/24 --dns-nameserver 10.245.0.10 --no-dhcp --network private private_subnet
+    openstack router create --enable --project "${tenant}" pub-router
+    #neutron router-create pub-router --tenant-id "${tenant}"
 
-    neutron router-create pub-router --tenant-id "${tenant}"
-    neutron router-gateway-set pub-router public
-    neutron router-interface-add pub-router private
+    openstack router set pub-router --external-gateway public
+    #neutron router-gateway-set pub-router public
+
+    openstack router add subnet pub-router private_subnet
+    #neutron router-interface-add pub-router private
 
     # Adjust the default security group.  This is not good practice
-    default_group=$(neutron security-group-list | awk '/ default / {print $2}' | tail -n 1)
-    neutron security-group-rule-create --direction ingress --port-range-min 22 --port-range-max 22 --protocol tcp --remote-ip-prefix 0.0.0.0/0 "${default_group}"
-    neutron security-group-rule-create --direction ingress --port-range-min 80 --port-range-max 80 --protocol tcp --remote-ip-prefix 0.0.0.0/0 "${default_group}"
-    neutron security-group-rule-create --direction ingress --port-range-min 443 --port-range-max 443 --protocol tcp --remote-ip-prefix 0.0.0.0/0 "${default_group}"
-    openstack security group rule create --proto tcp --dst-port 22:22 "${default_group}" --ingress
+    #default_group=$(neutron security-group-list | awk '/ default / {print $2}' | tail -n 1)
+    default_group=$(openstack security group list | grep "${tenant}" | awk '{print $2}')
+    openstack security group rule create "${default_group}" --protocol tcp --dst-port 22:22 --remote-ip 0.0.0.0/0
+    openstack security group rule create "${default_group}" --protocol tcp --dst-port 80:80 --remote-ip 0.0.0.0/0
+    openstack security group rule create "${default_group}" --protocol tcp --dst-port 443:443 --remote-ip 0.0.0.0/0
+    openstack security group rule create "${default_group}" --protocol icmp
 }
 
 

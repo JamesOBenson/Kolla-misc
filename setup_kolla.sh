@@ -89,6 +89,7 @@ function one_time () {
   pip install kolla==4.0.0
   #pip install -U git+https://github.com/openstack/kolla.git@stable/ocata
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
+  ./setup_networking.sh one_time
 }
 
 function settings () {
