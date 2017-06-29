@@ -1,8 +1,40 @@
 #!/bin/bash
 SLEEP=5
-RACK=6
-KOLLA_VERSION=4.0.0
+#RACK=6
+#KOLLA_VERSION=4.0.0
+touch .kolla_configs
+source .kolla_configs
 
+#function set_variables () {
+if  [ -z "$RACK" ]; 
+ then
+    echo "What rack do you want to work on?"
+    read RACK
+    echo "RACK=$RACK" >> .kolla_configs
+  else 
+    RACK=$RACK;
+fi
+
+if  [ -z "$KOLLA_VERSION" ]; 
+then
+  echo "What version of Kolla?"
+  options=("4.0.0" "4.0.2")
+  select kolla in "${options[@]}"
+  do
+    case $kolla in
+        "4.0.0" ) 
+           echo "KOLLA_VERSION=4.0.0" >> .kolla_configs
+           KOLLA_VERSION=4.0.0;break;;
+        "4.0.2" ) 
+           echo "KOLLA_VERSION=4.0.2" >> .kolla_configs
+           KOLLA_VERSION=4.0.2;break;;
+        * ) echo "Invalid option";;
+    esac
+  done
+fi
+
+  echo -e "$(date) \t -- \t Kolla $KOLLA will be deployed on Rack $RACK" >> deploy_history.log
+#}
 # Verify:
 #  - /etc/hosts file has all hostnames in it
 
@@ -153,6 +185,7 @@ function destroy () {
         No ) exit;;
     esac
   done
+  rm .kolla_configs
 }
 
 function prechecks () {
@@ -179,6 +212,10 @@ function post_deploy () {
   kolla-ansible post-deploy
   cat /etc/kolla/admin-openrc.sh | grep OS_PASSWORD
   ./setup_networking.sh deploy
+}
+
+function clear_configs () {
+  rm .kolla_configs
 }
 
 function usage () {
@@ -226,7 +263,12 @@ function usage () {
     echo "    precheck"
     echo "    deploy"
     echo "    post_deploy"
-
+    echo ""
+    echo ""
+    echo ""
+    echo -e "\033[33;7mCURRENTLY SET TO DEPLOY KOLLA $KOLLA_VERSION TO RACK $RACK ### \033[0m"
+    echo ""
+    echo " To clear configs: clear_configs"
 }
 
 function main () {
@@ -283,6 +325,9 @@ function main () {
             ;;
         "update_globals")
             update_globals
+            ;;
+        "clear_configs")
+            clear_configs
             ;;
         esac
     fi
