@@ -1,7 +1,7 @@
 #!/bin/bash
 SLEEP=5
 RACK=6
-
+KOLLA_VERSION=4.0.0
 
 # Verify:
 #  - /etc/hosts file has all hostnames in it
@@ -12,6 +12,12 @@ RACK=6
 ###############
 #TMP_INVENTORY_FILE="tmp"$RACK
 INVENTORY_FILE="multinode"$RACK
+
+function update_globals () {
+  sed "s/{KOLLA_VERSION}/$KOLLA_VERSION/" globals.yml.template > globals.yml
+  sed -i "s/{RACK}/$RACK/" globals.yml
+  cp globals.yml /etc/kolla/globals.yml
+}
 
 function create_docker_repo_and_images () {
   echo ""
@@ -234,6 +240,7 @@ function main () {
     fi
 
     if [ "$1" == "deploy_all" ]; then
+        update_globals
         prechecks
         deploy
         post_deploy
@@ -272,6 +279,9 @@ function main () {
             ;;
         "quick_docker_repo_and_images")
             quick_docker_repo_and_images
+            ;;
+        "update_globals")
+            update_globals
             ;;
         esac
     fi
