@@ -1,1 +1,3 @@
 deploy_history.log
+.kolla_configs
+*.retry
