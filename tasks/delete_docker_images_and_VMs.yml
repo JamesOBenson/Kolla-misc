@@ -6,3 +6,4 @@
 - name: Kill all running VM's
   shell: kill `ps aux | grep -F 'qemu' | awk '{ print $2 }'`
   become: yes
+  ignore_errors: true
