@@ -11,12 +11,13 @@ KOLLA_VERSION=4.0.0
 # DO NOT MODIFY 
 ###############
 #TMP_INVENTORY_FILE="tmp"$RACK
-INVENTORY_FILE="multinode"$RACK
+INVENTORY_FILE="templates/multinode"$RACK
 
 function update_globals () {
-  sed "s/{KOLLA_VERSION}/$KOLLA_VERSION/" globals.yml.template > globals.yml
+  sed "s/{KOLLA_VERSION}/$KOLLA_VERSION/" templates/globals.yml.template > globals.yml
   sed -i "s/{RACK}/$RACK/" globals.yml
   cp globals.yml /etc/kolla/globals.yml
+  rm globals.yml
 }
 
 function create_docker_repo_and_images () {
