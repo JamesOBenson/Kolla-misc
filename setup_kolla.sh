@@ -5,7 +5,6 @@ SLEEP=5
 touch .kolla_configs
 source .kolla_configs
 
-#function set_variables () {
 if  [ -z "$RACK" ]; 
  then
     echo "What rack do you want to work on?"
@@ -33,16 +32,11 @@ then
   done
 fi
 
-  echo -e "$(date) \t -- \t Kolla $KOLLA will be deployed on Rack $RACK" >> deploy_history.log
-#}
-# Verify:
-#  - /etc/hosts file has all hostnames in it
 
 
 ###############
 # DO NOT MODIFY 
 ###############
-#TMP_INVENTORY_FILE="tmp"$RACK
 INVENTORY_FILE="templates/multinode"$RACK
 
 function update_globals () {
@@ -123,12 +117,12 @@ function one_time () {
   pip uninstall -U Jinja2 
   pip install -U Jinja2==2.8
   #pip install -U git+https://github.com/openstack/kolla-ansible.git@stable/ocata
-  pip install kolla-ansible==4.0.0
+  pip install kolla-ansible==$KOLLA_VERSION
   curl -sSL https://get.docker.io | bash
-  pip install kolla==4.0.0
+  pip install kolla==$KOLLA_VERSION
   #pip install -U git+https://github.com/openstack/kolla.git@stable/ocata
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
-  ./setup_networking.sh one_time
+  pip install -U python-openstackclient
 }
 
 function settings () {
@@ -139,7 +133,7 @@ function settings () {
   echo ""
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
 #cp /usr/local/share/kolla-ansible/ansible/inventory/* .
-  cp globals.yml /etc/kolla/globals.yml
+  update_globals
 }
 
 function bootstrap () {
@@ -174,15 +168,15 @@ function destroy () {
   echo ""
   ansible-playbook -i "$INVENTORY_FILE" kolla_bridge.yml --tags "kill_VMs" --extra-vars='{"CIDR":"0.0.0.0"}'
   kolla-ansible -i "$INVENTORY_FILE" destroy --yes-i-really-really-mean-it
-  #ansible -i $INVENTORY_FILE -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage
-  ansible -i $INVENTORY_FILE -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage
-  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vars='{"CIDR":"0.0.0.0"}'
-  #ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "ceph" --extra-vars='{"CIDR":"0.0.0.0"}'
+  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "ceph" --extra-vars='{"CIDR":"0.0.0.0"}'
+#  ansible -i $INVENTORY_FILE -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage
+#  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vars='{"CIDR":"0.0.0.0"}'
   echo "Do you with to delete ALL containers on hosts too?"
   select yn in "Yes" "No"; do
     case $yn in
         Yes ) ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "nuke_it" --extra-vasrs='{"CIDR":"0.0.0.0"}'; break;;
-        No ) exit;;
+        No ) break;;
+        * ) echo "Invalid option";;
     esac
   done
   rm .kolla_configs
@@ -204,6 +198,7 @@ function deploy () {
   echo ""
   echo "<deploy>"
   echo ""
+  echo -e "$(date) \t -- \t Kolla $KOLLA will be deployed on Rack $RACK" >> deploy_history.log
   kolla-ansible deploy -i "$INVENTORY_FILE" -vv
   sleep "$SLEEP"
 }
@@ -211,7 +206,8 @@ function deploy () {
 function post_deploy () {
   kolla-ansible post-deploy
   cat /etc/kolla/admin-openrc.sh | grep OS_PASSWORD
-  ./setup_networking.sh deploy
+  wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
+  ./scripts/setup_networking.sh deploy
 }
 
 function clear_configs () {
@@ -333,4 +329,5 @@ function main () {
     fi
 }
 
+update_globals
 main "$1"
