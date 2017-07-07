@@ -32,7 +32,23 @@ then
   done
 fi
 
-
+if  [ -z "$OPERATING_SYSTEM" ];
+then
+  echo "What docker OS would you like to use?"
+  options=("centos" "ubuntu")
+  select OPERATING_SYSTEM in "${options[@]}"
+  do
+    case $OPERATING_SYSTEM in
+        "ubuntu" )
+           echo "OPERATING_SYSTEM=ubuntu" >> .kolla_configs
+           OPERATING_SYSTEM=ubuntu;break;;
+        "centos" )
+           echo "OPERATING_SYSTEM=centos" >> .kolla_configs
+           OPERATING_SYSTEM=centos;break;;
+        * ) echo "Invalid option";;
+    esac
+  done
+fi
 
 ###############
 # DO NOT MODIFY 
@@ -42,6 +58,12 @@ INVENTORY_FILE="templates/multinode"$RACK
 function update_globals () {
   sed "s/{KOLLA_VERSION}/$KOLLA_VERSION/" templates/globals.yml.template > globals.yml
   sed -i "s/{RACK}/$RACK/" globals.yml
+  sed -i "s/{OPERATING_SYSTEM}/$OPERATING_SYSTEM/" globals.yml
+  if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
+    sed -i "s/{INSTALLATION_TYPE}/source/" globals.yml
+  elif [ "$OPERATING_SYSTEM" == "centos" ]; then
+    sed -i "s/{INSTALLATION_TYPE}/binary/" globals.yml
+  fi 
   cp globals.yml /etc/kolla/globals.yml
   rm globals.yml
 }
@@ -143,9 +165,18 @@ function bootstrap () {
   echo " Sets up ceph, kolla bootstrap, and genpwd"
   echo ""
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
-  ansible -i $INVENTORY_FILE -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
-  ansible-playbook -i $INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
-  ansible-playbook -i $INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
+  if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
+    ansible -i $INVENTORY_FILE -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
+    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
+    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
+  fi
+
+  if [ "$OPERATING_SYSTEM" == "centos" ]; then
+    ansible -i $INVENTORY_FILE -m yum -a "name=python state=present" --become all -u centos -e ansible_python_interpreter=/usr/bin/python
+    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "oneTime" -u centos --extra-vars='{"CIDR": "0.0.0.0"}'
+    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u centos
+  fi
+
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
   ansible -i $INVENTORY_FILE -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
   ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vasrs='{"CIDR":"0.0.0.0"}'
@@ -198,7 +229,7 @@ function deploy () {
   echo ""
   echo "<deploy>"
   echo ""
-  echo -e "$(date) \t -- \t Kolla $KOLLA will be deployed on Rack $RACK" >> deploy_history.log
+  echo -e "$(date) \t -- \t Kolla $KOLLA_VERSION will be deployed on Rack $RACK USING $OPERATING_SYSTEM DOCKER IMAGES" >> deploy_history.log
   kolla-ansible deploy -i "$INVENTORY_FILE" -vv
   sleep "$SLEEP"
 }
@@ -262,7 +293,7 @@ function usage () {
     echo ""
     echo ""
     echo ""
-    echo -e "\033[33;7mCURRENTLY SET TO DEPLOY KOLLA $KOLLA_VERSION TO RACK $RACK ### \033[0m"
+    echo -e "\033[33;7mCURRENTLY SET TO DEPLOY KOLLA $KOLLA_VERSION TO RACK $RACK USING $OPERATING_SYSTEM DOCKER IMAGES ### \033[0m"
     echo ""
     echo " To clear configs: clear_configs"
 }

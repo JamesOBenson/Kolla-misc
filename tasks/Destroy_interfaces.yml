@@ -3,14 +3,46 @@
   shell: /sbin/ifconfig br0 | grep Bcast | wc -l
   tags: interface
   register: Br0_Bcast
+  when:
+    - ansible_os_family == "Debian"
+
+- name: Check interface Br0 has IP address
+  shell: /sbin/ifconfig br0 | grep broadcast | wc -l
+  tags: interface
+  register: Br0_Bcast
+  when:
+    - ansible_os_family == "RedHat"
+
+- name: Delete IP in br0
+  become: yes
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-br0
+    state: absent
+    regexp: "{{ item }}"
+  with_items:
+      - '^IPADDR'
+      - '^NETMASK'
+      - '^GATEWAY'
+
+- name: Bring up br0
+  become: yes
+  command: bash -c "ifdown br0 && ifup br0"
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+
 
 - name: Backup interfaces file
-  when: Br0_Bcast.stdout == '1'
   become: yes
   command: mv /etc/network/interfaces /etc/network/interfaces2.bck
+  when:
+    - ansible_os_family == "Debian"
+    - Br0_Bcast.stdout == '1'
 
 - name: Create a new interfaces file
-  when: Br0_Bcast.stdout == '1'
   become: yes
   file:
     path: /etc/network/interfaces
@@ -18,11 +50,16 @@
     mode: 0644
     owner: root
     group: root
+  when:
+    - ansible_os_family == "Debian"
+    - Br0_Bcast.stdout == '1'
 
 - name: Inject code into new interfaces file (Removing Br0 IP Addr)
   become: yes
-  when: Br0_Bcast.stdout == '1'
   ignore_errors: true
+  when:
+    - ansible_os_family == "Debian"
+    - Br0_Bcast.stdout == '1'
   blockinfile:
     mode: 0644
     path: /etc/network/interfaces
@@ -52,7 +89,9 @@
 
 - name: Restart server
   become: yes
-  when: Br0_Bcast.stdout == '1'
+  when:
+    - ansible_os_family == "Debian"
+    - Br0_Bcast.stdout == '1'
   shell: sleep 2 && shutdown -r now
   async: 1
   poll: 0
@@ -67,3 +106,5 @@
       delay=1
       timeout=600
       connect_timeout=15
+  when:
+    - ansible_os_family == "Debian"

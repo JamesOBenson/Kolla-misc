@@ -1,5 +1,5 @@
 ---
-- name: Uninstall LXD and LXC
+- name: Ubuntu - Uninstall LXD and LXC
   become: yes
   apt:
     name: "{{ item }}"
@@ -8,6 +8,17 @@
   with_items:
     - lxd
     - lxc
+  when: ansible_distribution == 'Ubuntu'
+
+- name: CentOS - Uninstall LXD and LXC
+  become: yes
+  yum:
+    name: "{{ item }}"
+    state: absent
+  with_items:
+    - lxd
+    - lxc
+  when: ansible_distribution == 'CentOS'
 
 - name: Make sure internal IPv4 and hostname is in etc/hosts
   lineinfile:
@@ -25,3 +36,9 @@
 - name: Allow root to SSH
   command: cp /home/ubuntu/.ssh/authorized_keys /root/.ssh/authorized_keys
   become: yes
+  when: ansible_distribution == 'Ubuntu'
+
+- name: CentOS - Allow root to SSH
+  command: cp /home/centos/.ssh/authorized_keys /root/.ssh/authorized_keys
+  become: yes
+  when: ansible_distribution == 'CentOS'

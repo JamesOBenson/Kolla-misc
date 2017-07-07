@@ -8,12 +8,16 @@
 
 - name: Backup interfaces file
   become: yes
-  when: iface_veno0.stdout == '0'
   command: mv /etc/network/interfaces /etc/network/interfaces.bck
+  when: 
+    - ansible_os_family == "Debian"
+    - iface_veno0.stdout == '0'
 
 - name: Create a new interfaces file
   become: yes
-  when: iface_veno0.stdout == '0'
+  when:
+    - ansible_os_family == "Debian"
+    - iface_veno0.stdout == '0'
   file:
     path: /etc/network/interfaces
     state: touch
@@ -23,7 +27,9 @@
 
 - name: Inject code into new interfaces file (Generating IP for Br0)
   become: yes
-  when: iface_veno0.stdout == '0'
+  when:
+    - ansible_os_family == "Debian"
+    - iface_veno0.stdout == '0'
   ignore_errors: true
   blockinfile:
     mode: 0644
@@ -55,12 +61,158 @@
            gateway {{ CIDR }}{{ gateway_Oct }}
            up route add -net {{ CIDR }}{{ network_Oct }}  netmask 255.255.255.0 gw {{ CIDR }}{{ gateway_Oct }}  br0
 
+- name: Create a new public interfaces file
+  become: yes
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  file:
+    path: /etc/sysconfig/network-scripts/ifcfg-eno2
+    state: touch
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Inject code into new interfaces file (Generating IP for eno2)
+  become: yes
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  ignore_errors: true
+  blockinfile:
+    mode: 0644
+    path: /etc/sysconfig/network-scripts/ifcfg-eno2
+    state: present
+    block: |
+        DEVICE="eno2"
+        BOOTPROTO="static"
+        ONBOOT="yes"
+        TYPE="Ethernet"
+        USERCTL="yes"
+        PEERDNS="yes"
+        IPV6INIT="no"
+        PERSISTENT_DHCLIENT="1"
+        BRIDGE=br0
+        IPADDR="{{ CIDR }}{{ ansible_eno1.ipv4.address.split('.')[3] }}"
+        NETMASK="255.255.255.0"
+        GATEWAY="{{ CIDR }}{{ gateway_Oct }}"
+        DNS1=10.245.0.10
+        NM_CONTROLLED="no"
+
+- name: Bring up eno2
+  become: yes
+  command: bash -c "ifup eno2"
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+
+- name: Install bridge-utils
+  become: yes
+  yum:
+    name: bridge-utils
+    state: present
+  when:
+    - ansible_os_family == "RedHat"
+
+- name: Delete IP in eno2
+  become: yes
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  lineinfile:
+    path: /etc/sysconfig/network-scripts/ifcfg-eno2
+    state: absent
+    regexp: "{{ item }}"
+  with_items:
+      - '^IPADDR'
+      - '^NETMASK'
+      - '^GATEWAY'
+
+- name: Create a br0 file
+  become: yes
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  file:
+    path: /etc/sysconfig/network-scripts/ifcfg-br0
+    state: touch
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Inject code into new br0 file (Generating IP for Br0)
+  become: yes
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  ignore_errors: true
+  blockinfile:
+    mode: 0644
+    path: /etc/sysconfig/network-scripts/ifcfg-br0
+    state: present
+    block: |
+        DEVICE="br0"
+        BOOTPROTO="static"
+        ONBOOT="yes"
+        TYPE="Bridge"
+        NM_CONTROLLED="no"
+        IPADDR="{{ CIDR }}{{ ansible_eno1.ipv4.address.split('.')[3] }}"
+        NETMASK="255.255.255.0"
+        GATEWAY="{{ CIDR }}{{ gateway_Oct }}"
+
+
+- name: Copy ifup/ifdown files for  veno0/veno1
+  become: yes
+  copy:
+    src: "{{ item }}"
+    dest: /etc/sysconfig/network-scripts
+    owner: root
+    group: root
+    mode: 0755
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  with_items:
+    - ../templates/ifdown-veth
+    - ../templates/ifup-veth
+
+- name: Create veno0/veno1
+  become: yes
+  copy:
+    src: "{{ item }}"
+    dest: /etc/sysconfig/network-scripts
+    owner: root
+    group: root
+    mode: 0644
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+  with_items: 
+    - ../templates/ifcfg-veth0
+    - ../templates/ifcfg-veth1
+
+- name: Bring up br0
+  become: yes
+  command: bash -c "ifdown eno2 && ifup eno2 && ifup br0"
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+
+- name: Bring up veth0 & veth1
+  become: yes
+  command: bash -c "ifup veth0 && ifup veth1"
+  when:
+    - ansible_os_family == "RedHat"
+    - iface_veno0.stdout == '0'
+
 - name: Restart server
   become: yes
   shell: sleep 2 && shutdown -r now
   async: 1
   poll: 0
-  when: iface_veno0.stdout == '0'
+  when:
+    - ansible_os_family == "Debian"
+    - iface_veno0.stdout == '0'
   ignore_errors: true
 
 - name: Wait for server to restart
@@ -72,3 +224,6 @@
       delay=1
       timeout=600
       connect_timeout=15
+  when:
+    - ansible_os_family == "Debian"
+    - iface_veno0.stdout == '0'

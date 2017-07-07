@@ -12,10 +12,10 @@
 #config_strategy: "COPY_ALWAYS"
 
 # Valid options are [ centos, oraclelinux, ubuntu ]
-kolla_base_distro: "ubuntu"
+kolla_base_distro: "{OPERATING_SYSTEM}"
 
 # Valid options are [ binary, source ]
-kolla_install_type: "source"
+kolla_install_type: "{INSTALLATION_TYPE}"
 
 # Valid option is Docker repository tag
 openstack_release: "{KOLLA_VERSION}"
@@ -54,7 +54,7 @@ kolla_external_vip_address: "10.245.12{RACK}.4"
 
 #docker_registry: "172.16.0.10:4000"
 #docker_registry: "192.168.2.250:4000"
-docker_registry: "192.168.{RACK}.250:4000"
+docker_registry: "192.168.{RACK}.251:4000"
 #docker_registry: "10.245.0.23:4000"
 #docker_namespace: "companyname"
 #docker_registry_username: "sam"
