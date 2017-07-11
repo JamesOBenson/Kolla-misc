@@ -168,7 +168,7 @@ function bootstrap () {
   if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
     ansible -i $INVENTORY_FILE -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
     ansible-playbook -i $INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
-    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
+    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu --extra-vars='{"CIDR": "10.245.12$RACK."}'
   fi
 
   if [ "$OPERATING_SYSTEM" == "centos" ]; then
