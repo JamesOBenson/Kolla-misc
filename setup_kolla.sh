@@ -197,7 +197,8 @@ function destroy () {
   echo "- Destroy ceph volumes"
   echo "- optional: delete images on nodes"
   echo ""
-  ansible-playbook -i "$INVENTORY_FILE" kolla_bridge.yml --tags "kill_VMs" --extra-vars='{"CIDR":"0.0.0.0"}'
+  #ansible-playbook -i "$INVENTORY_FILE" kolla_bridge.yml --tags "kill_VMs" --extra-vars='{"CIDR":"0.0.0.0"}'
+  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "kill_VMs,destroy" --extra-vars='{"CIDR":"0.0.0.0"}'
   kolla-ansible -i "$INVENTORY_FILE" destroy --yes-i-really-really-mean-it
   ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "ceph" --extra-vars='{"CIDR":"0.0.0.0"}'
 #  ansible -i $INVENTORY_FILE -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage
@@ -205,7 +206,7 @@ function destroy () {
   echo "Do you with to delete ALL containers on hosts too?"
   select yn in "Yes" "No"; do
     case $yn in
-        Yes ) ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "nuke_it" --extra-vasrs='{"CIDR":"0.0.0.0"}'; break;;
+        Yes ) ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "kill_dmi" --extra-vasrs='{"CIDR":"0.0.0.0"}'; break;;
         No ) break;;
         * ) echo "Invalid option";;
     esac
@@ -230,7 +231,7 @@ function deploy () {
   echo "<deploy>"
   echo ""
   echo -e "$(date) \t -- \t Kolla $KOLLA_VERSION will be deployed on Rack $RACK USING $OPERATING_SYSTEM DOCKER IMAGES" >> deploy_history.log
-  kolla-ansible deploy -i "$INVENTORY_FILE" -vv
+  kolla-ansible deploy -i "$INVENTORY_FILE" #-vv
   sleep "$SLEEP"
 }
 

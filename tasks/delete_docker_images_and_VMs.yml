@@ -1,9 +1,32 @@
-- name: Delete local docker images
-  shell: docker rmi -f $(docker images --quiet)
-  become: yes
+#- name: Delete local docker images
+#  shell: docker rmi -f $(docker images --quiet)
+#  become: yes
+#  ignore_errors: true
+#  tags: kill_dmi
+
+
+- name: Register running VM's in qemu
+  shell: ps aux | awk '/\/usr\/bin\/qemu-system-x86_64/ {print $2}'
   ignore_errors: true
+  register: qemu_processes
+  tags: kill_VMs
+
+- name: qemu_processes
+  debug: 
+    msg: "qemu processes: '{{ qemu_processes.stdout_lines }}'"
+  tags: kill_VMs
+  when: qemu_processes.stdout_lines == "" 
+
+- name: You are going to delete actively running VM's, are you sure?
+  pause:
+    minutes: 1
+  tags: kill_VMs
+  when: qemu_processes.stdout_lines == ""
 
 - name: Kill all running VM's
-  shell: kill `ps aux | grep -F 'qemu' | awk '{ print $2 }'`
+  shell: kill -9 "{{ item }}"
   become: yes
-  ignore_errors: true
+  tags: kill_VMs
+  when: qemu_processes.stdout_lines == ""
+  with_items: 
+    - "{{ qemu_processes.stdout_lines }}"

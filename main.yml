@@ -36,7 +36,7 @@
   hosts: compute
   tasks: 
     - include: tasks/delete_docker_images_and_VMs.yml
-  tags: nuke_it
+  tags: destroy
 
 - name: Reboot all nodes
   hosts: all
