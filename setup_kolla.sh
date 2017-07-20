@@ -111,18 +111,18 @@ function delete_docker_repo_and_images () {
   echo ""
   echo ""
   sleep $SLEEP
-  docker kill `docker ps -a | awk '{print $1}'`
-  docker rmi -f `docker images | grep none | awk '{print $3}'`
-  docker rmi -f `docker images | grep kolla | awk '{print $3}'`
-  docker rmi `docker images | grep ubuntu | awk '{print $3}'`
-  docker stop `docker ps -a | grep registry | awk '{print $1}'`
-  docker rmi -f `docker images | grep registry | awk '{print $3}'`
+  docker kill $(docker ps -a | awk '{print $1}')
+  docker rmi -f $(docker images | grep none | awk '{print $3}')
+  docker rmi -f $(docker images | grep kolla | awk '{print $3}')
+  docker rmi $(docker images | grep ubuntu | awk '{print $3}')
+  docker stop $(docker ps -a | grep registry | awk '{print $1}')
+  docker rmi -f $(docker images | grep registry | awk '{print $3}')
   rm -R /opt/kolla_registry
   
 }
 
 function Reboot () {
-  ansible-playbook -i $INVENTORY_FILE  main.yml --tags "Reboot"
+  ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "Reboot"
 }
 
 function one_time () {
@@ -167,22 +167,22 @@ function bootstrap () {
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
   if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
     ansible -i $INVENTORY_FILE -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
-    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
-    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu# --extra-vars='{"CIDR": "10.245.12."}'
+    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
+    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u ubuntu# --extra-vars='{"CIDR": "10.245.12."}'
   fi
 
   if [ "$OPERATING_SYSTEM" == "centos" ]; then
     ansible -i $INVENTORY_FILE -m yum -a "name=python state=present" --become all -u centos -e ansible_python_interpreter=/usr/bin/python
-    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "oneTime" -u centos --extra-vars='{"CIDR": "0.0.0.0"}'
-    ansible-playbook -i $INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u centos
+    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u centos --extra-vars='{"CIDR": "0.0.0.0"}'
+    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u centos
   fi
 
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
-  ansible -i $INVENTORY_FILE -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
+  ansible -i "$INVENTORY_FILE" -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
   ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vasrs='{"CIDR":"0.0.0.0"}'
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "ceph" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
   kolla-genpwd
-  kolla-ansible -i $INVENTORY_FILE bootstrap-servers
+  kolla-ansible -i "$INVENTORY_FILE" bootstrap-servers
   kolla-ansible certificates
   ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "destroy_public_interfaces" --extra-vars='{"CIDR":"0.0.0.0"}'
   ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vars='{"CIDR":"0.0.0.0"}'
@@ -237,7 +237,7 @@ function deploy () {
 
 function post_deploy () {
   kolla-ansible post-deploy
-  cat /etc/kolla/admin-openrc.sh | grep OS_PASSWORD
+  grep OS_PASSWORD /etc/kolla/admin-openrc.sh
   wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
   ./scripts/setup_networking.sh deploy
 }
@@ -294,9 +294,9 @@ function usage () {
     echo ""
     echo ""
     echo ""
-    kolla_external_vip_address=`awk -v FS="kolla_external_vip_address: " 'NF>1{print $2}'  /etc/kolla/globals.yml` 
-    kolla_external_fqdn=`awk -v FS="kolla_external_fqdn: " 'NF>1{print $2}'  /etc/kolla/globals.yml`
-    admin_pass=`awk -v FS="export OS_PASSWORD=" 'NF>1{print $2}' /etc/kolla/admin-openrc.sh`
+    kolla_external_vip_address=$(awk -v FS="kolla_external_vip_address: " 'NF>1{print $2}'  /etc/kolla/globals.yml)
+    kolla_external_fqdn=$(awk -v FS="kolla_external_fqdn: " 'NF>1{print $2}'  /etc/kolla/globals.yml)
+    admin_pass=$(awk -v FS="export OS_PASSWORD=" 'NF>1{print $2}' /etc/kolla/admin-openrc.sh)
     echo -e "\033[33;7mCURRENTLY SET TO DEPLOY KOLLA $KOLLA_VERSION TO RACK $RACK USING $OPERATING_SYSTEM DOCKER IMAGES ### \033[0m"
     echo -e "\033[33;7mPlease try to log into $kolla_external_vip_address or $kolla_external_fqdn with username admin and password: $admin_pass  \033[0m"
     echo ""
