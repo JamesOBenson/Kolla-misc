@@ -5,3 +5,9 @@ addons:
     - debian-sid    # Grab ShellCheck from the Debian repo
     packages:
     - shellcheck
+
+script:
+ - shellcheck *.sh
+
+matrix:
+  fast_finish: true
