@@ -113,12 +113,12 @@ function delete_docker_repo_and_images () {
   echo ""
   echo ""
   sleep $SLEEP
-  docker kill $(docker ps -a | awk '{print $1}')
-  docker rmi -f $(docker images | grep none | awk '{print $3}')
-  docker rmi -f $(docker images | grep kolla | awk '{print $3}')
-  docker rmi $(docker images | grep ubuntu | awk '{print $3}')
-  docker stop $(docker ps -a | grep registry | awk '{print $1}')
-  docker rmi -f $(docker images | grep registry | awk '{print $3}')
+  docker kill "$(docker ps -a | awk '{print $1}')"
+  docker rmi -f "$(docker images | grep none | awk '{print $3}')"
+  docker rmi -f "$(docker images | grep kolla | awk '{print $3}')"
+  docker rmi "$(docker images | grep ubuntu | awk '{print $3}')"
+  docker stop "$(docker ps -a | grep registry | awk '{print $1}')"
+  docker rmi -f "$(docker images | grep registry | awk '{print $3}')"
   rm -R /opt/kolla_registry
   
 }
@@ -168,13 +168,13 @@ function bootstrap () {
   echo ""
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
   if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
-    ansible -i $INVENTORY_FILE -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
+    ansible -i "$INVENTORY_FILE" -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
     ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
     ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u ubuntu# --extra-vars='{"CIDR": "10.245.12."}'
   fi
 
   if [ "$OPERATING_SYSTEM" == "centos" ]; then
-    ansible -i $INVENTORY_FILE -m yum -a "name=python state=present" --become all -u centos -e ansible_python_interpreter=/usr/bin/python
+    ansible -i "$INVENTORY_FILE" -m yum -a "name=python state=present" --become all -u centos -e ansible_python_interpreter=/usr/bin/python
     ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u centos --extra-vars='{"CIDR": "0.0.0.0"}'
     ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u centos
   fi
