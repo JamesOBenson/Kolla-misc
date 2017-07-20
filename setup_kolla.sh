@@ -8,7 +8,7 @@ source .kolla_configs
 if  [ -z "$RACK" ]; 
  then
     echo "What rack do you want to work on?"
-    read RACK
+    read -r RACK
     echo "RACK=$RACK" >> .kolla_configs
   else 
     RACK=$RACK;
