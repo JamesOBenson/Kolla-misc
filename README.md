@@ -1,3 +1,6 @@
+### Status
+[![Build Status](https://travis-ci.org/JamesOBenson/Kolla-misc.png)](https://travis-ci.org/JamesOBenson/Kolla-misc)
+
 Misc. scripts that help with kolla deployments.
 
 execute:
