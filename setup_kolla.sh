@@ -3,6 +3,8 @@ SLEEP=5
 #RACK=6
 #KOLLA_VERSION=4.0.0
 touch .kolla_configs
+
+# shellcheck disable=SC1091
 source .kolla_configs
 
 if  [ -z "$RACK" ]; 
@@ -230,7 +232,7 @@ function deploy () {
   echo ""
   echo "<deploy>"
   echo ""
-  echo -e "$(date) \t -- \t Kolla $KOLLA_VERSION will be deployed on Rack $RACK USING $OPERATING_SYSTEM DOCKER IMAGES" >> deploy_history.log
+  echo -e "$(date) \\t -- \\t Kolla $KOLLA_VERSION will be deployed on Rack $RACK USING $OPERATING_SYSTEM DOCKER IMAGES" >> deploy_history.log
   kolla-ansible deploy -i "$INVENTORY_FILE" #-vv
   sleep "$SLEEP"
 }
@@ -297,8 +299,8 @@ function usage () {
     kolla_external_vip_address=$(awk -v FS="kolla_external_vip_address: " 'NF>1{print $2}'  /etc/kolla/globals.yml)
     kolla_external_fqdn=$(awk -v FS="kolla_external_fqdn: " 'NF>1{print $2}'  /etc/kolla/globals.yml)
     admin_pass=$(awk -v FS="export OS_PASSWORD=" 'NF>1{print $2}' /etc/kolla/admin-openrc.sh)
-    echo -e "\033[33;7mCURRENTLY SET TO DEPLOY KOLLA $KOLLA_VERSION TO RACK $RACK USING $OPERATING_SYSTEM DOCKER IMAGES ### \033[0m"
-    echo -e "\033[33;7mPlease try to log into $kolla_external_vip_address or $kolla_external_fqdn with username admin and password: $admin_pass  \033[0m"
+    echo -e "\\033[33;7mCURRENTLY SET TO DEPLOY KOLLA $KOLLA_VERSION TO RACK $RACK USING $OPERATING_SYSTEM DOCKER IMAGES ### \\033[0m"
+    echo -e "\\033[33;7mPlease try to log into $kolla_external_vip_address or $kolla_external_fqdn with username admin and password: $admin_pass  \\033[0m"
     echo ""
     echo " To clear configs: clear_configs"
 }
