@@ -119,6 +119,7 @@ function main () {
     echo ""
     echo ""
 
+    # shellcheck disable=SC1091
     source /etc/kolla/admin-openrc.sh
     if [ -z "$1" ]; then
         usage
