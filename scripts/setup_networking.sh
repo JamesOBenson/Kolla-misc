@@ -23,7 +23,7 @@ function create_networking () {
     echo "  Note: This is what can be used in everyone tenant accounts...."
     echo ""
     openstack network create --project "${tenant}" private
-    openstack subnet create --project "${tenant}" --subnet-range 192.168.100.0/24 --dns-nameserver 10.245.0.10 --no-dhcp --network private private_subnet
+    openstack subnet create --project "${tenant}" --subnet-range 192.168.100.0/24 --dns-nameserver 10.245.0.10 --network private private_subnet
     openstack router create --enable --project "${tenant}" pub-router
     #neutron router-create pub-router --tenant-id "${tenant}"
 
