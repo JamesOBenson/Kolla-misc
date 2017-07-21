@@ -32,11 +32,11 @@
     - include: tasks/ceph.yml
   tags: ceph
 
-- name: Delete all docker images from cluster
+- name: Delete all VM's from cluster
   hosts: compute
   tasks: 
     - include: tasks/delete_docker_images_and_VMs.yml
-  tags: destroy
+  tags: kill_VMs
 
 - name: Reboot all nodes
   hosts: all
