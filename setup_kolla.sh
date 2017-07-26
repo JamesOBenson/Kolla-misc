@@ -15,7 +15,23 @@ if  [ -z "$RACK" ];
   else 
     RACK=$RACK;
 fi
+KollaAnsible_INSTALLED="$(pip list --format=columns | grep kolla-ansible  | awk '{print $2}')"
+Kolla_Installed="$(pip list --format=columns | grep "kolla " | awk '{print $2}')"
+#echo "KollaAnsible_INSTALLED= " $KollaAnsible_INSTALLED
+#echo "Kolla_Installed= " $Kolla_Installed
+if [ "$KollaAnsible_INSTALLED" == "$Kolla_Installed" ];
+then 
+  KOLLA_VERSION="${Kolla_Installed}" #:1:-1}"
+  echo "KOLLA_VERSION=$KOLLA_VERSION"
+  echo "KOLLA_VERSION=$KOLLA_VERSION" >> .kolla_configs
+fi 
+if [ "$KollaAnsible_INSTALLED" != "$Kolla_Installed" ];
+then
+  echo "Please verify that you have both Kolla and Kolla-ansible installed"
+  echo "and that the version match: pip list --format=columns  grep 'kolla'"
+fi
 
+echo $INSTALLED
 if  [ -z "$KOLLA_VERSION" ]; 
 then
   echo "What version of Kolla?"
@@ -24,7 +40,7 @@ then
   do
     case $kolla in
         "4.0.0" ) 
-           echo "KOLLA_VERSION=4.0.0" >> .kolla_configs
+          echo "KOLLA_VERSION=4.0.0" >> .kolla_configs
            KOLLA_VERSION=4.0.0;break;;
         "4.0.2" ) 
            echo "KOLLA_VERSION=4.0.2" >> .kolla_configs
@@ -199,10 +215,9 @@ function destroy () {
   echo "- Destroy ceph volumes"
   echo "- optional: delete images on nodes"
   echo ""
-  #ansible-playbook -i "$INVENTORY_FILE" kolla_bridge.yml --tags "kill_VMs" --extra-vars='{"CIDR":"0.0.0.0"}'
-  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "kill_VMs,destroy" --extra-vars='{"CIDR":"0.0.0.0"}'
+  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "kill_VMs" --extra-vars='{"CIDR":"0.0.0.0"}'
   kolla-ansible -i "$INVENTORY_FILE" destroy --yes-i-really-really-mean-it
-  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "ceph" --extra-vars='{"CIDR":"0.0.0.0"}'
+#  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "ceph" --extra-vars='{"CIDR":"0.0.0.0"}'
 #  ansible -i $INVENTORY_FILE -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage
 #  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vars='{"CIDR":"0.0.0.0"}'
   echo "Do you with to delete ALL containers on hosts too?"
@@ -233,7 +248,7 @@ function deploy () {
   echo "<deploy>"
   echo ""
   echo -e "$(date) \\t -- \\t Kolla $KOLLA_VERSION will be deployed on Rack $RACK USING $OPERATING_SYSTEM DOCKER IMAGES" >> deploy_history.log
-  kolla-ansible deploy -i "$INVENTORY_FILE" #-vv
+  time kolla-ansible deploy -i "$INVENTORY_FILE" #-vv
   sleep "$SLEEP"
 }
 

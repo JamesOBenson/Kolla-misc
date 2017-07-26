@@ -13,8 +13,6 @@ r6-410-3
 # This can be the same as a host in the control group
 [network]
 r6-410-1
-r6-410-2
-r6-410-3
 
 [compute]
 r6-410-4
