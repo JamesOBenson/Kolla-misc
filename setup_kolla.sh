@@ -31,7 +31,7 @@ then
   echo "and that the version match: pip list --format=columns  grep 'kolla'"
 fi
 
-echo $INSTALLED
+echo "$INSTALLED"
 if  [ -z "$KOLLA_VERSION" ]; 
 then
   echo "What version of Kolla?"
