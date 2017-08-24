@@ -19,16 +19,26 @@ KollaAnsible_INSTALLED="$(pip list --format=columns | grep kolla-ansible  | awk 
 Kolla_Installed="$(pip list --format=columns | grep "kolla " | awk '{print $2}')"
 #echo "KollaAnsible_INSTALLED= " $KollaAnsible_INSTALLED
 #echo "Kolla_Installed= " $Kolla_Installed
+
+# Make sure kolla version is correct in config file
 if [ "$KollaAnsible_INSTALLED" == "$Kolla_Installed" ];
-then 
+then
   KOLLA_VERSION="${Kolla_Installed}" #:1:-1}"
-  echo "KOLLA_VERSION=$KOLLA_VERSION"
-  echo "KOLLA_VERSION=$KOLLA_VERSION" >> .kolla_configs
-fi 
+#  echo "KOLLA_VERSION=$KOLLA_VERSION"
+  sed -i -e "s/.*KOLLA_VERSION.*/KOLLA_VERSION=$KOLLA_VERSION/" -e "KOLLA_VERSION=$KOLLA_VERSION" .kolla_configs
+fi
+
+# Make sure Kolla and Kolla ansible version match
 if [ "$KollaAnsible_INSTALLED" != "$Kolla_Installed" ];
 then
   echo "Please verify that you have both Kolla and Kolla-ansible installed"
   echo "and that the version match: pip list --format=columns  grep 'kolla'"
+fi
+
+# Make sure Kolla Version is in file
+if ! grep -R "KOLLA_VERSION" .kolla_configs > /dev/null;
+then
+  echo "KOLLA_VERSION=$KOLLA_VERSION" >>.kolla_configs
 fi
 
 echo "$INSTALLED"
