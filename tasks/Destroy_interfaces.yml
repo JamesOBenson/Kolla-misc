@@ -35,31 +35,31 @@
     - iface_veno0.stdout == '0'
 
 
-- name: Backup interfaces file
-  become: yes
-  command: mv /etc/network/interfaces /etc/network/interfaces2.bck
-  when:
-    - ansible_os_family == "Debian"
-    - Br0_Bcast.stdout == '1'
+#- name: Backup interfaces file
+#  become: yes
+#  command: mv /etc/network/interfaces /etc/network/interfaces2.bck
+#  when:
+#    - ansible_os_family == "Debian"
+#    - Br0_Bcast.stdout == '1'
 
-- name: Create a new interfaces file
-  become: yes
-  file:
-    path: /etc/network/interfaces
-    state: touch
-    mode: 0644
-    owner: root
-    group: root
-  when:
-    - ansible_os_family == "Debian"
-    - Br0_Bcast.stdout == '1'
+#- name: Create a new interfaces file
+#  become: yes
+#  file:
+#    path: /etc/network/interfaces
+#    state: touch
+#    mode: 0644
+#    owner: root
+#    group: root
+#  when:
+#    - ansible_os_family == "Debian"
+#    - Br0_Bcast.stdout == '1'
 
 - name: Inject code into new interfaces file (Removing Br0 IP Addr)
   become: yes
   ignore_errors: true
   when:
     - ansible_os_family == "Debian"
-    - Br0_Bcast.stdout == '1'
+    - inventory_hostname not in groups['control']
   blockinfile:
     mode: 0644
     path: /etc/network/interfaces
@@ -68,30 +68,22 @@
         auto lo
         iface lo inet loopback
           dns-search maas
-          dns-nameservers 10.245.0.10
+          dns-nameservers {{ DNS_NAMESERVER }}
 
         auto eno1
         iface eno1 inet static
-           dns-nameservers 10.245.0.10
+           dns-nameservers {{ DNS_NAMESERVER }}
            address {{ ansible_eno1.ipv4.address }}
            netmask 255.255.255.0
-           gateway 192.168.6.2
 
-        #auto eno2
-        auto br0
-        iface br0 inet manual
-           pre-up ip link add veno0 type veth peer name veno1
-           pre-up ifconfig veno0 up
-           pre-up ifconfig veno1 up
-           bridge_ports eno2 veno0
-           bridge_fd 0
-           bridge_maxwait 0
+        auto eno2
+        iface eno2 inet manual
 
 - name: Restart server
   become: yes
   when:
     - ansible_os_family == "Debian"
-    - Br0_Bcast.stdout == '1'
+    - inventory_hostname not in groups['control']
   shell: sleep 2 && shutdown -r now
   async: 1
   poll: 0

@@ -54,7 +54,10 @@ function one_time () {
     echo ""
     pip install python-openstackclient
     pip install python-neutronclient
-    wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
+    if [ ! -f cirros-0.3.5-x86_64-disk.img ]; then
+       echo "CirrOS image file not found!"
+       wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
+    fi
 }
 
 function setup_OpenStack () {

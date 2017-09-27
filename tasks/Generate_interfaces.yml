@@ -25,11 +25,12 @@
     owner: root
     group: root
 
-- name: Inject code into new interfaces file (Generating IP for Br0)
+- name: Inject code into new interfaces file (Generating IP for Br0) - control group
   become: yes
   when:
     - ansible_os_family == "Debian"
     - iface_veno0.stdout == '0'
+    - inventory_hostname in groups['control']
   ignore_errors: true
   blockinfile:
     mode: 0644
@@ -39,17 +40,17 @@
         auto lo
         iface lo inet loopback
           dns-search maas
-          dns-nameservers 10.245.0.10
+          dns-nameservers {{ DNS_NAMESERVER }}
 
         auto eno1
         iface eno1 inet static
-           dns-nameservers 10.245.0.10
+           dns-nameservers {{ DNS_NAMESERVER }}
            address {{ ansible_eno1.ipv4.address }}
            netmask 255.255.255.0
 
-        #auto eno2
         auto br0
         iface br0 inet static
+           dns-nameservers {{ DNS_NAMESERVER }}
            pre-up ip link add veno0 type veth peer name veno1
            pre-up ifconfig veno0 up
            pre-up ifconfig veno1 up
@@ -60,6 +61,35 @@
            netmask 255.255.255.0
            gateway {{ CIDR }}{{ gateway_Oct }}
            up route add -net {{ CIDR }}{{ network_Oct }}  netmask 255.255.255.0 gw {{ CIDR }}{{ gateway_Oct }}  br0
+
+- name: Inject code into new interfaces file (Generating IP for Br0) - private group
+  become: yes
+  when:
+    - ansible_os_family == "Debian"
+    - inventory_hostname not in groups['control']
+  ignore_errors: true
+  blockinfile:
+    mode: 0644
+    path: /etc/network/interfaces
+    state: present
+    block: |
+        auto lo
+        iface lo inet loopback
+          dns-search maas
+          dns-nameservers {{ DNS_NAMESERVER }}
+
+        auto eno1
+        iface eno1 inet static
+           dns-nameservers {{ DNS_NAMESERVER }}
+           address {{ ansible_eno1.ipv4.address }}
+           netmask 255.255.255.0
+
+        auto eno2
+        iface eno2 inet static
+           dns-nameservers {{ DNS_NAMESERVER }}
+           address {{ CIDR }}{{ ansible_eno1.ipv4.address.split('.')[3] }}
+           netmask 255.255.255.0
+           gateway {{ CIDR }}{{ gateway_Oct }}
 
 - name: Create a new public interfaces file
   become: yes

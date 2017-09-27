@@ -180,13 +180,25 @@ function bootstrap () {
   echo ""
   echo "<bootstrap>"
   echo ""
+  echo " Sets up/configures:"
+  echo "   - purges LXD/LXC (oneTime)"
+  echo "   - SSH via root (oneTime)"
+  echo "   - Generates appropiate Interfaces/reboots"
+  echo "   - sets up python"
+  echo "   - KOLLA GEN-PASSWORD"
+  echo "   - KOLLA BOOTSTRAP"
+  echo ""
   echo " Sets up ceph, kolla bootstrap, and genpwd"
   echo ""
+  sleep 5
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
   if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
     ansible -i "$INVENTORY_FILE" -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
+    sleep 2
     ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
-    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u ubuntu# --extra-vars='{"CIDR": "10.245.12."}'
+    sleep 2
+    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u ubuntu
+    sleep 2
   fi
 
   if [ "$OPERATING_SYSTEM" == "centos" ]; then
@@ -196,14 +208,16 @@ function bootstrap () {
   fi
 
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
-  ansible -i "$INVENTORY_FILE" -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
-  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vasrs='{"CIDR":"0.0.0.0"}'
+#  ansible -i "$INVENTORY_FILE" -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
+  #ansible -i "$INVENTORY_FILE" -m shell -a "sgdisk --zap-all --clear --mbrtogpt /dev/sdb; sgdisk --zap-all --clear --mbrtogpt /dev/sdc; sgdisk --zap-all --clear --mbrtogpt /dev/sdd; sgdisk --zap-all --clear --mbrtogpt /dev/sde" storage
+
+  #ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vasrs='{"CIDR":"0.0.0.0"}'
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "ceph" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
   kolla-genpwd
   kolla-ansible -i "$INVENTORY_FILE" bootstrap-servers
   kolla-ansible certificates
-  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "destroy_public_interfaces" --extra-vars='{"CIDR":"0.0.0.0"}'
-  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vars='{"CIDR":"0.0.0.0"}'
+  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "destroy_public_interfaces" --extra-vars='{"CIDR":"1.0.0.0"}'
+  #ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vars='{"CIDR":"0.0.0.0"}'
 }
 
 function destroy () {
@@ -215,6 +229,7 @@ function destroy () {
   echo "- Destroy ceph volumes"
   echo "- optional: delete images on nodes"
   echo ""
+  echo -e "$(date) \\t -- \\t Kolla $KOLLA_VERSION will be DESTROYED on Rack $RACK" >> deploy_history.log
   ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "kill_VMs" --extra-vars='{"CIDR":"0.0.0.0"}'
   kolla-ansible -i "$INVENTORY_FILE" destroy --yes-i-really-really-mean-it
 #  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "ceph" --extra-vars='{"CIDR":"0.0.0.0"}'
@@ -274,7 +289,7 @@ function usage () {
     echo "    creates the docker repo and builds images"
     echo ""
     echo "  one_time"
-    echo "    Installs necessary components"
+    echo "    Installs necessary components for deployment node"
     echo ""
     echo "  settings"
     echo "    Moves local global.yml to /etc/kolla/global.yml"

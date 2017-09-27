@@ -44,7 +44,7 @@ kolla_external_vip_address: "10.245.12{RACK}.4"
 # for the endpoints that will be created. This DNS name should map to
 # kolla_external_vip_address.
 
-kolla_external_fqdn: "cloud.icsr.utsa.edu"
+kolla_external_fqdn: "cloud.ics.utsa.edu"
 
 ####################
 # Docker options
@@ -175,7 +175,7 @@ enable_magnum: "yes"
 #enable_mongodb: "no"
 enable_murano: "yes"
 #enable_multipathd: "no"
-#enable_neutron_dvr: "no"
+enable_neutron_dvr: "yes"
 enable_neutron_lbaas: "yes"
 enable_neutron_fwaas: "yes"
 #enable_neutron_qos: "no"

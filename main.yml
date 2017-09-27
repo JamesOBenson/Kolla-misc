@@ -11,6 +11,7 @@
   vars:
     network_Oct: "0"
     gateway_Oct: "253"
+    DNS_NAMESERVER: "129.115.103.72"
   vars_prompt:
     - name: "CIDR"
       prompt: "What is the first 3 octets of the IP? i.e. 10.245.122."
@@ -22,6 +23,10 @@
 
 - name: Remove public interfaces
   hosts: 'all:!control:!monitoring:!network'
+  vars:
+    network_Oct: "0"
+    gateway_Oct: "253"
+    DNS_NAMESERVER: "129.115.103.72"
   tasks:
     - include: tasks/Destroy_interfaces.yml
   tags: destroy_public_interfaces
