@@ -45,16 +45,13 @@ echo "$INSTALLED"
 if  [ -z "$KOLLA_VERSION" ]; 
 then
   echo "What version of Kolla?"
-  options=("4.0.0" "4.0.2")
+  options=("5.0.0")
   select kolla in "${options[@]}"
   do
     case $kolla in
-        "4.0.0" ) 
-          echo "KOLLA_VERSION=4.0.0" >> .kolla_configs
-           KOLLA_VERSION=4.0.0;break;;
-        "4.0.2" ) 
-           echo "KOLLA_VERSION=4.0.2" >> .kolla_configs
-           KOLLA_VERSION=4.0.2;break;;
+        "5.0.0" ) 
+          echo "KOLLA_VERSION=5.0.0" >> .kolla_configs
+           KOLLA_VERSION=5.0.0;break;;
         * ) echo "Invalid option";;
     esac
   done
@@ -122,9 +119,9 @@ function quick_docker_repo_and_images () {
   echo ""
   echo "    cd /opt/kolla_registry"
   echo ""
-  wget http://tarballs.openstack.org/kolla/images/ubuntu-source-registry-ocata.tar.gz
+  wget http://tarballs.openstack.org/kolla/images/ubuntu-source-registry-pike.tar.gz
   mkdir /opt/kolla_registry
-  sudo tar xzf ubuntu-source-registry-ocata.tar.gz -C /opt/kolla_registry
+  sudo tar xzf ubuntu-source-registry-pike.tar.gz -C /opt/kolla_registry
   docker run -d -p 4000:5000 --restart=always -v /opt/kolla_registry/:/var/lib/registry --name registry registry:2
   #sed -i "/#?docker_namespace: .*/docker_namespace: \"lokolla\"/g"
 }
@@ -206,8 +203,8 @@ function bootstrap () {
   fi
 
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
-  ansible -i "$INVENTORY_FILE" -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
-  ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vasrs='{"CIDR":"0.0.0.0"}'
+  #ansible -i "$INVENTORY_FILE" -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
+  #ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vasrs='{"CIDR":"0.0.0.0"}'
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "ceph" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
   kolla-genpwd
   kolla-ansible -i "$INVENTORY_FILE" bootstrap-servers

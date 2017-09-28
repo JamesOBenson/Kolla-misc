@@ -2,9 +2,9 @@
 # additional groups are for more control of the environment.
 [control]
 # These hostname must be resolvable from your deployment host
-r2-710-6
-r2-710-7
-r2-710-8
+r2-710-01
+r2-710-03
+r2-710-05
 
 # The above can also be specified as follows:
 #control[01:03]     ansible_user=kolla
@@ -12,30 +12,41 @@ r2-710-8
 # The network nodes are where your l3-agent and loadbalancers will run
 # This can be the same as a host in the control group
 [network]
-r2-710-2
-r2-710-3
-r2-710-4
+r2-710-01
+r2-710-03
+r2-710-05
 
 [compute]
-#r2-410-1
-r2-410-2
-#r2-410-3
+r2-710-13
+r2-710-11
+r2-710-09
+r2-710-07
+r2-610-30
+r2-610-29
+r2-610-28
+r2-610-27
+r2-610-26
+r2-610-25
+r2-610-24
+r2-610-23
+r2-610-22
+r2-610-21
+r2-610-20
+r2-610-19
+r2-610-18
+r2-610-17
+
 
 [monitoring]
-r2-710-5
+r2-710-05
 # When compute nodes and control nodes use different interfaces,
 # you can specify "api_interface" and other interfaces like below:
 #compute01 neutron_external_interface=eth0 api_interface=em1 storage_interface=em1 tunnel_interface=em1
 
 [storage]
-r2-710-2
-r2-710-3
-r2-710-4
-r2-710-5
-r2-710-6
-r2-710-7
-r2-710-8
 
+[deployment]
+r2-710-01
 
 [baremetal:children]
 control
@@ -47,7 +58,7 @@ monitoring
 # You can explicitly specify which hosts run each project by updating the
 # groups in the sections below. Common services are grouped together.
 [chrony-server:children]
-control
+haproxy
 
 [chrony:children]
 control
@@ -64,6 +75,7 @@ monitoring
 
 [etcd:children]
 control
+compute
 
 [influxdb:children]
 monitoring
@@ -87,10 +99,26 @@ control
 [haproxy:children]
 network
 
+[hyperv]
+#hyperv_host
+
+[hyperv:vars]
+#ansible_user=user
+#ansible_password=password
+#ansible_port=5986
+#ansible_connection=winrm
+#ansible_winrm_server_cert_validation=ignore
+
 [mariadb:children]
 control
 
 [rabbitmq:children]
+control
+
+[outward-rabbitmq:children]
+control
+
+[qdrouterd:children]
 control
 
 [mongodb:children]
@@ -106,6 +134,14 @@ control
 control
 
 [neutron:children]
+network
+
+[openvswitch:children]
+network
+compute
+manila-share
+
+[opendaylight:children]
 network
 
 [cinder:children]
@@ -205,6 +241,18 @@ control
 [placement:children]
 control
 
+[bifrost:children]
+deployment
+
+[zun:children]
+control
+
+[skydive:children]
+monitoring
+
+[redis:children]
+control
+
 # Additional control implemented here. These groups allow you to control which
 # services run on which hosts at a per-service level.
 #
@@ -261,6 +309,9 @@ neutron
 neutron
 
 [neutron-vpnaas-agent:children]
+neutron
+
+[neutron-bgp-dragent:children]
 neutron
 
 # Ceph
@@ -531,7 +582,7 @@ designate
 designate
 
 [designate-mdns:children]
-designate
+network
 
 [designate-worker:children]
 designate
@@ -545,3 +596,25 @@ designate
 # Placement
 [placement-api:children]
 placement
+
+# Zun
+[zun-api:children]
+zun
+
+[zun-compute:children]
+compute
+
+# Skydive
+[skydive-analyzer:children]
+skydive
+
+[skydive-agent:children]
+compute
+network
+
+# Tacker
+[tacker-server:children]
+tacker
+
+[tacker-conductor:children]
+tacker
