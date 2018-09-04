@@ -1,7 +1,7 @@
 #!/bin/bash
 SLEEP=5
 #RACK=6
-#KOLLA_VERSION=4.0.0
+#KOLLA_VERSION=6.1.0
 touch .kolla_configs
 
 # shellcheck disable=SC1091
@@ -45,16 +45,19 @@ echo "$INSTALLED"
 if  [ -z "$KOLLA_VERSION" ]; 
 then
   echo "What version of Kolla?"
-  options=("4.0.0" "4.0.2")
+  options=("4.0.0" "4.0.2" "6.1.0")
   select kolla in "${options[@]}"
   do
     case $kolla in
         "4.0.0" ) 
           echo "KOLLA_VERSION=4.0.0" >> .kolla_configs
-           KOLLA_VERSION=4.0.0;break;;
+          KOLLA_VERSION=4.0.0;break;;
         "4.0.2" ) 
-           echo "KOLLA_VERSION=4.0.2" >> .kolla_configs
-           KOLLA_VERSION=4.0.2;break;;
+          echo "KOLLA_VERSION=4.0.2" >> .kolla_configs
+          KOLLA_VERSION=4.0.2;break;;
+        "6.1.0" ) 
+          echo "KOLLA_VERSION=6.1.0" >> .kolla_configs
+          KOLLA_VERSION=6.1.0;break;;
         * ) echo "Invalid option";;
     esac
   done
@@ -163,13 +166,13 @@ function one_time () {
   apt install -y python-pip
   pip install -U pip
   apt install -y python-dev libffi-dev gcc libssl-dev
-  pip install -U ansible==2.3.0.0
+  pip install -U ansible #==2.3.0.0
   pip uninstall -U Jinja2 
-  pip install -U Jinja2==2.8
+  pip install -U Jinja2 #==2.8
   #pip install -U git+https://github.com/openstack/kolla-ansible.git@stable/ocata
   pip install kolla-ansible==$KOLLA_VERSION
   curl -sSL https://get.docker.io | bash
-  pip install kolla==$KOLLA_VERSION
+#  pip install kolla==$KOLLA_VERSION
   #pip install -U git+https://github.com/openstack/kolla.git@stable/ocata
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
   pip install -U python-openstackclient
