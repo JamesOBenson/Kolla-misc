@@ -1,4 +1,6 @@
 #!/bin/bash
+MYDNS="129.115.103.72"
+
 function create_admin_networking () {
     echo ""
     echo "Creating admin network for public use (NOT FOR LOCAL ACCOUNTS)  ..."
@@ -8,11 +10,11 @@ function create_admin_networking () {
     echo "Please enter the public network that will be used for floating IP's in the following format: 10.245.126"
     read -r public_network
     #public_network=10.245.126
-    openstack network create --project "${tenant}" --external --provider-network-type flat --provider-physical-network physnet1 --share public
+    openstack network create --project "${tenant}" --external --provider-network-type flat --provider-physical-network physnet1 public
     #neutron net-create public --tenant-id "${tenant}" --router:external --provider:network_type flat --provider:physical_network physnet1 --shared
     #if segmented network{vlan,vxlan,gre}: --provider:segmentation_id ${segment_id}
-    openstack subnet create --project "${tenant}" --subnet-range "${public_network}".0/24 --allocation-pool start="${public_network}".15,end="${public_network}".249 --dns-nameserver 10.245.0.10 --no-dhcp --gateway "${public_network}".253 --network public public_subnet
-    #neutron subnet-create public "${public_network}".0/24 --tenant-id "${tenant}" --allocation-pool start="${public_network}".15,end="${public_network}".249 --dns-nameserver 10.245.0.10 --disable-dhcp --gateway="${public_network}".253
+    openstack subnet create --project "${tenant}" --subnet-range "${public_network}".0/24 --allocation-pool start="${public_network}".40,end="${public_network}".249 --dns-nameserver "${MYDNS}" --no-dhcp --gateway "${public_network}".253 --network public public_subnet
+    #neutron subnet-create public "${public_network}".0/24 --tenant-id "${tenant}" --allocation-pool start="${public_network}".15,end="${public_network}".249 --dns-nameserver "${MYDNS}" --disable-dhcp --gateway="${public_network}".253
     # if you need a specific route to get "out" of your public network: --host-route destination=10.0.0.0/8,nexthop=10.1.10.254
 }
 
@@ -23,7 +25,7 @@ function create_networking () {
     echo "  Note: This is what can be used in everyone tenant accounts...."
     echo ""
     openstack network create --project "${tenant}" private
-    openstack subnet create --project "${tenant}" --subnet-range 192.168.100.0/24 --dns-nameserver 10.245.0.10 --network private private_subnet
+    openstack subnet create --project "${tenant}" --subnet-range 192.168.100.0/24 --dns-nameserver "${MYDNS}" --network private private_subnet
     openstack router create --enable --project "${tenant}" pub-router
     #neutron router-create pub-router --tenant-id "${tenant}"
 
@@ -41,12 +43,6 @@ function create_networking () {
     openstack security group rule create "${default_group}" --protocol tcp --dst-port 443:443 --remote-ip 0.0.0.0/0
     openstack security group rule create "${default_group}" --protocol icmp
 }
-
-
-function tmp () {
-  echo "hello"
-}
-
 
 function one_time () {
     echo ""
