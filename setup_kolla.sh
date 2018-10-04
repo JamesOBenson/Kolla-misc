@@ -1,5 +1,6 @@
 #!/bin/bash
 SLEEP=5
+ANSIBLE_VERSION=2.5.*
 #RACK=6
 #KOLLA_VERSION=6.1.0
 touch .kolla_configs
@@ -45,16 +46,10 @@ echo "$INSTALLED"
 if  [ -z "$KOLLA_VERSION" ]; 
 then
   echo "What version of Kolla?"
-  options=("4.0.0" "4.0.2" "6.1.0")
+  options=("6.1.0")
   select kolla in "${options[@]}"
   do
     case $kolla in
-        "4.0.0" ) 
-          echo "KOLLA_VERSION=4.0.0" >> .kolla_configs
-          KOLLA_VERSION=4.0.0;break;;
-        "4.0.2" ) 
-          echo "KOLLA_VERSION=4.0.2" >> .kolla_configs
-          KOLLA_VERSION=4.0.2;break;;
         "6.1.0" ) 
           echo "KOLLA_VERSION=6.1.0" >> .kolla_configs
           KOLLA_VERSION=6.1.0;break;;
@@ -66,17 +61,13 @@ fi
 if  [ -z "$OPERATING_SYSTEM" ];
 then
   echo "What docker OS would you like to use?"
-  options=("centos" "ubuntu")
+  options=("ubuntu")
   select OPERATING_SYSTEM in "${options[@]}"
   do
     case $OPERATING_SYSTEM in
         "ubuntu" )
            echo "OPERATING_SYSTEM=ubuntu" >> .kolla_configs
            OPERATING_SYSTEM=ubuntu;break;;
-        "centos" )
-           echo "OPERATING_SYSTEM=centos" >> .kolla_configs
-           OPERATING_SYSTEM=centos;break;;
-        * ) echo "Invalid option";;
     esac
   done
 fi
@@ -99,59 +90,6 @@ function update_globals () {
   rm globals.yml
 }
 
-function create_docker_repo_and_images () {
-  echo ""
-  echo "<create_docker_repo_and_images>"
-  echo ""
-  echo "Creating a local docker repo (registry2)...."
-  echo "Building ubuntu source kolla images..."
-  echo "   this is going to take a while..."
-  echo ""
-  echo ""
-  echo ""
-  docker run -d \
-      --name registry \
-      --restart=always \
-      -p 4000:5000 \
-      -v registry:/var/lib/registry \
-      registry:2
-  kolla-build -t source -b ubuntu --registry 127.0.0.1:4000 --push
-}
-
-function quick_docker_repo_and_images () {
-  echo ""
-  echo "This is going to download the tarball from openstack kolla gates"
-  echo "    The new images will be added to the registry and can be explored by going to:"
-  echo ""
-  echo "    cd /opt/kolla_registry"
-  echo ""
-  wget http://tarballs.openstack.org/kolla/images/ubuntu-source-registry-ocata.tar.gz
-  mkdir /opt/kolla_registry
-  sudo tar xzf ubuntu-source-registry-ocata.tar.gz -C /opt/kolla_registry
-  docker run -d -p 4000:5000 --restart=always -v /opt/kolla_registry/:/var/lib/registry --name registry registry:2
-  #sed -i "/#?docker_namespace: .*/docker_namespace: \"lokolla\"/g"
-}
-
-
-function delete_docker_repo_and_images () {
-  echo ""
-  echo "<delete_docker_repo_and_images>"
-  echo ""
-  echo "DELETING the local docker repo and images..."
-  echo ""
-  echo ""
-  echo ""
-  sleep $SLEEP
-  docker kill "$(docker ps -a | awk '{print $1}')"
-  docker rmi -f "$(docker images | grep none | awk '{print $3}')"
-  docker rmi -f "$(docker images | grep kolla | awk '{print $3}')"
-  docker rmi "$(docker images | grep ubuntu | awk '{print $3}')"
-  docker stop "$(docker ps -a | grep registry | awk '{print $1}')"
-  docker rmi -f "$(docker images | grep registry | awk '{print $3}')"
-  rm -R /opt/kolla_registry
-  
-}
-
 function Reboot () {
   ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "Reboot"
 }
@@ -166,7 +104,7 @@ function one_time () {
   apt install -y python-pip
   pip install -U pip
   apt install -y python-dev libffi-dev gcc libssl-dev
-  pip install -U ansible #==2.3.0.0
+  pip install -U ansible==$ANSIBLE_VERSION
   pip uninstall -U Jinja2 
   pip install -U Jinja2 #==2.8
   #pip install -U git+https://github.com/openstack/kolla-ansible.git@stable/ocata
@@ -298,9 +236,6 @@ function usage () {
     echo "Usage: $0 {Any of the options below}"
     echo ""
     echo ""
-    echo "  create_docker_repo_and_images"
-    echo "    creates the docker repo and builds images"
-    echo ""
     echo "  one_time"
     echo "    Installs necessary components for deployment node"
     echo ""
@@ -328,9 +263,6 @@ function usage () {
     echo ""
     echo "  destroy"
     echo "    destroys the evironment and wipes ceph"
-    echo ""
-    echo "  delete_docker_repo_and_images"
-    echo "    deletes all docker images"
     echo ""
     echo "  deploy_all"
     echo "    precheck"
@@ -388,17 +320,8 @@ function main () {
         "destroy")
             destroy
             ;;
-        "delete_docker_repo_and_images")
-            delete_docker_repo_and_images
-            ;;
-        "create_docker_repo_and_images")
-            create_docker_repo_and_images
-            ;;
         "Reboot")
             Reboot
-            ;;
-        "quick_docker_repo_and_images")
-            quick_docker_repo_and_images
             ;;
         "update_globals")
             update_globals
