@@ -1,8 +1,6 @@
 #!/bin/bash
 SLEEP=5
 ANSIBLE_VERSION=2.5.*
-#RACK=6
-#KOLLA_VERSION=6.1.0
 touch .kolla_configs
 
 # shellcheck disable=SC1091
@@ -17,9 +15,6 @@ if  [ -z "$RACK" ];
     RACK=$RACK;
 fi
 KollaAnsible_INSTALLED="$(pip list --format=columns | grep kolla-ansible  | awk '{print $2}')"
-Kolla_Installed="$(pip list --format=columns | grep "kolla " | awk '{print $2}')"
-#echo "KollaAnsible_INSTALLED= " $KollaAnsible_INSTALLED
-#echo "Kolla_Installed= " $Kolla_Installed
 
 # Make sure kolla version is correct in config file
 if [ "$KollaAnsible_INSTALLED" == "$Kolla_Installed" ];
@@ -78,16 +73,23 @@ fi
 INVENTORY_FILE="templates/multinode"$RACK
 
 function update_globals () {
-  sed "s/{KOLLA_VERSION}/$KOLLA_VERSION/" templates/globals.yml.template > globals.yml
-  sed -i "s/{RACK}/$RACK/" globals.yml
-  sed -i "s/{OPERATING_SYSTEM}/$OPERATING_SYSTEM/" globals.yml
-  if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
-    sed -i "s/{INSTALLATION_TYPE}/source/" globals.yml
-  elif [ "$OPERATING_SYSTEM" == "centos" ]; then
-    sed -i "s/{INSTALLATION_TYPE}/binary/" globals.yml
-  fi 
-  cp globals.yml /etc/kolla/globals.yml
-  rm globals.yml
+  file="/etc/kolla/globals.yml"
+  if [ -f "$file" ]
+  then
+      echo "$file found.  Not replacing."
+  else
+      echo "$file not found.  Creating a new config "
+      sed "s/{KOLLA_VERSION}/$KOLLA_VERSION/" templates/globals.yml.template > globals.yml
+      sed -i "s/{RACK}/$RACK/" globals.yml
+      sed -i "s/{OPERATING_SYSTEM}/$OPERATING_SYSTEM/" globals.yml
+      if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
+          sed -i "s/{INSTALLATION_TYPE}/source/" globals.yml
+      elif [ "$OPERATING_SYSTEM" == "centos" ]; then
+          sed -i "s/{INSTALLATION_TYPE}/binary/" globals.yml
+      fi
+      cp globals.yml /etc/kolla/globals.yml
+      rm globals.yml
+  fi
 }
 
 function Reboot () {
@@ -105,13 +107,7 @@ function one_time () {
   pip install -U pip
   apt install -y python-dev libffi-dev gcc libssl-dev
   pip install -U ansible==$ANSIBLE_VERSION
-  pip uninstall -U Jinja2 
-  pip install -U Jinja2 #==2.8
-  #pip install -U git+https://github.com/openstack/kolla-ansible.git@stable/ocata
   pip install kolla-ansible==$KOLLA_VERSION
-  curl -sSL https://get.docker.io | bash
-#  pip install kolla==$KOLLA_VERSION
-  #pip install -U git+https://github.com/openstack/kolla.git@stable/ocata
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
   pip install -U python-openstackclient
 }
@@ -125,6 +121,11 @@ function settings () {
   cp -r /usr/local/share/kolla-ansible/etc_examples/kolla /etc/kolla/
 #cp /usr/local/share/kolla-ansible/ansible/inventory/* .
   update_globals
+}
+
+function prep_ceph () {
+  ansible -i "$INVENTORY_FILE" -m shell -a "sgdisk --zap-all --clear --mbrtogpt /dev/sdb" storage
+  ansible -i "$INVENTORY_FILE" -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage
 }
 
 function bootstrap () {
@@ -142,26 +143,14 @@ function bootstrap () {
   echo " Sets up ceph, kolla bootstrap, and genpwd"
   echo ""
   sleep 5
-  #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
-  if [ "$OPERATING_SYSTEM" == "ubuntu" ]; then
-    ansible -i "$INVENTORY_FILE" -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
-    sleep 2
-    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
-    sleep 2
-    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u ubuntu
-    sleep 2
-  fi
-
-  if [ "$OPERATING_SYSTEM" == "centos" ]; then
-    ansible -i "$INVENTORY_FILE" -m yum -a "name=python state=present" --become all -u centos -e ansible_python_interpreter=/usr/bin/python
-    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u centos --extra-vars='{"CIDR": "0.0.0.0"}'
-    ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u centos
-  fi
+  ansible -i "$INVENTORY_FILE" -m apt -a "name=python state=present" --become all -u ubuntu -e ansible_python_interpreter=/usr/bin/python3
+  sleep 2
+  ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "oneTime" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
+  sleep 2
+  ansible-playbook -i "$INVENTORY_FILE"  main.yml --tags "generate_public_interfaces" -u ubuntu
+  sleep 2
 
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "generate_public_interfaces" -u ubuntu
-#  ansible -i "$INVENTORY_FILE" -m shell -a "parted /dev/sdb -s -- mklabel gpt mkpart KOLLA_CEPH_OSD_BOOTSTRAP 1 -1" storage 
-  #ansible -i "$INVENTORY_FILE" -m shell -a "sgdisk --zap-all --clear --mbrtogpt /dev/sdb; sgdisk --zap-all --clear --mbrtogpt /dev/sdc; sgdisk --zap-all --clear --mbrtogpt /dev/sdd; sgdisk --zap-all --clear --mbrtogpt /dev/sde" storage
-
   #ansible-playbook -i "$INVENTORY_FILE" main.yml --tags "Reboot" --extra-vasrs='{"CIDR":"0.0.0.0"}'
   #ansible-playbook -i $TMP_INVENTORY_FILE  main.yml --tags "ceph" -u ubuntu --extra-vars='{"CIDR": "0.0.0.0"}'
   kolla-genpwd
